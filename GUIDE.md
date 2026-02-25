@@ -77,7 +77,7 @@ ZAPIER_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/XXXXXXX/XXXXXXX/
 
 ## 4. Running the Server
 
-### Local Development .
+### Local Development 
 ```powershell
 # Make sure .venv is activated
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
