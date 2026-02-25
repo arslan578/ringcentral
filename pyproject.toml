@@ -1,0 +1,16 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[project]
+name = "rc-sms-webhook"
+version = "1.0.0"
+description = "RingCentral Inbound SMS → Zapier Webhook Integration for DNC Detection"
+requires-python = ">=3.12"
