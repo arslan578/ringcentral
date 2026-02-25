@@ -68,6 +68,7 @@ Open `.env` and fill in the two required values:
 
 ```env
 RC_WEBHOOK_VERIFICATION_TOKEN=<choose any random string, e.g. a UUID>
+<<<<<<< HEAD
 ZAPIER_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/XXXXXXX/XXXXXXX/
 ```
 
