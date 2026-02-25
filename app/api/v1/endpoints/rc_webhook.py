@@ -5,14 +5,16 @@ The primary endpoint: receives all inbound SMS webhook pushes from RingCentral.
 
 Two operations on the same path /api/v1/rc/webhook:
 
-  GET  — RC validation challenge.
-         When you first register the webhook in the RC Developer Console,
-         RC sends a GET to this URL with ?validationToken=<token>.
+  GET  — RC validation challenge (legacy/alternate).
+         RC sends a GET with ?validationToken=<token>.
          We MUST echo it back as plain text with 200 OK.
 
-  POST — RC inbound SMS notification.
-         RC posts the full event payload here.
-         We validate, deduplicate, build ZapierPayload, and forward.
+  POST — Two sub-cases:
+         a) Validation challenge: RC sends a POST with a "Validation-Token"
+            header when creating/renewing a subscription. We echo the token
+            back in the response "Validation-Token" header with 200 OK.
+         b) Inbound SMS notification: RC posts the full event payload.
+            We validate, deduplicate, build ZapierPayload, and forward.
 """
 from __future__ import annotations
 
@@ -99,6 +101,7 @@ async def rc_webhook_receiver(
     POST /api/v1/rc/webhook
 
     Full processing pipeline:
+      0. Handle Validation-Token challenge (subscription creation/renewal).
       1. Validate Verification-Token header.
       2. Parse raw JSON body.
       3. Parse into RCWebhookEvent schema.
@@ -109,6 +112,26 @@ async def rc_webhook_receiver(
       8. Mark message ID as seen.
       9. Return 200 OK to RC.
     """
+
+    # ── Step 0: Handle RC Validation Challenge ─────────────────────
+    # When creating/renewing a webhook subscription, RC sends a POST
+    # with a "Validation-Token" header. We MUST echo it back in the
+    # response header with 200 OK. This is separate from the
+    # "Verification-Token" used for ongoing push authentication.
+    validation_token = request.headers.get("Validation-Token")
+    if validation_token:
+        logger.info(
+            "RC webhook validation challenge received (POST)",
+            extra={
+                "event": "rc_validation_challenge",
+                "validation_token": validation_token,
+            },
+        )
+        return PlainTextResponse(
+            content=validation_token,
+            status_code=200,
+            headers={"Validation-Token": validation_token},
+        )
 
     # ── Step 1: Authenticate ───────────────────────────────────────
     verification_token = request.headers.get("Verification-Token")
