@@ -126,7 +126,7 @@ class RCAttachment(BaseModel):
     """Represents a message attachment (e.g. MMS)."""
     model_config = {"extra": "allow"}
 
-    id: Optional[str] = None
+    id: Optional[str | int] = None
     uri: Optional[str] = None
     type: Optional[str] = None
     content_type: Optional[str] = Field(None, alias="contentType")
