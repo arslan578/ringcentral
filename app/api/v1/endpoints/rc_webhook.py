@@ -1,7 +1,7 @@
 """
 app/api/v1/endpoints/rc_webhook.py
 
-The primary endpoint: receives all inbound SMS webhook pushes from RingCentral.
+The primary endpoint: receives all SMS webhook pushes from RingCentral.
 
 Two operations on the same path /api/v1/rc/webhook:
 
@@ -13,11 +13,19 @@ Two operations on the same path /api/v1/rc/webhook:
          a) Validation challenge: RC sends a POST with a "Validation-Token"
             header when creating/renewing a subscription. We echo the token
             back in the response "Validation-Token" header with 200 OK.
-         b) Inbound SMS notification: RC posts the full event payload.
-            We validate, deduplicate, build ZapierPayload, and forward.
+         b) Message-store notification: RC posts a CHANGE NOTIFICATION
+            containing message IDs (not the actual message content).
+            We fetch each message from the RC API, build ZapierPayloads,
+            and forward them all.
+
+IMPORTANT:
+  RC's message-store webhook does NOT include the SMS body, from/to numbers,
+  or any content.  It only includes `changes[].newMessageIds[]`.
+  We MUST call the RC REST API to fetch each message by ID.
 """
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
@@ -33,13 +41,73 @@ from app.core.exceptions import (
 )
 from app.core.idempotency import IdempotencyCache
 from app.core.rc_validator import validate_verification_token
-from app.schemas.rc_message import RCWebhookEvent
+from app.schemas.rc_message import RCMessage, RCWebhookEvent
 from app.schemas.zapier_payload import ZapierPayload
+from app.services.rc_api_client import RCApiClient
 from app.services.zapier_forwarder import ZapierForwarder
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/rc", tags=["RingCentral Webhook"])
+
+# Width of the separator lines in terminal output
+_SEP_WIDTH = 70
+
+
+def _log_zapier_payload(payload: dict, message_id: str) -> None:
+    """
+    Print the exact JSON payload being sent to Zapier in a clean,
+    readable format directly to the terminal.
+    """
+    direction = payload.get("direction", "Unknown")
+    event_type = payload.get("event_type", "sms")
+
+    sep = "-" * _SEP_WIDTH
+    header = f" ZAPIER PAYLOAD -- {event_type.upper()} "
+    header_line = f"{header:-^{_SEP_WIDTH}}"
+
+    lines = [
+        "",
+        header_line,
+        f"  source           : {payload.get('source')}",
+        f"  event_type       : {event_type}",
+        f"  message_id       : {payload.get('message_id')}",
+        f"  direction        : {direction}",
+        sep,
+        f"  from_number      : {payload.get('from_number')}",
+        f"  to_number        : {payload.get('to_number')}",
+        f"  body             : {payload.get('body', '')!r}",
+        sep,
+        f"  timestamp_utc    : {payload.get('timestamp_utc')}",
+        f"  received_at_utc  : {payload.get('received_at_utc')}",
+        sep,
+        f"  account_id       : {payload.get('account_id')}",
+        f"  extension_id     : {payload.get('extension_id')}",
+        f"  subscription_id  : {payload.get('subscription_id')}",
+        f"  conversation_id  : {payload.get('conversation_id')}",
+        sep,
+        f"  read_status      : {payload.get('read_status')}",
+        f"  message_status   : {payload.get('message_status')}",
+        f"  delivery_error   : {payload.get('delivery_error_code')}",
+        f"  priority         : {payload.get('priority')}",
+        f"  availability     : {payload.get('availability')}",
+        f"  attachment_count : {payload.get('attachment_count')}",
+        sep,
+        f"  rc_event_type    : {payload.get('rc_event_type')}",
+        f"  rc_event_uuid    : {payload.get('rc_event_uuid')}",
+        f"  raw_rc_payload   : ({len(json.dumps(payload.get('raw_rc_payload', {})))} bytes)",
+        sep,
+        "",
+    ]
+
+    logger.info(
+        "Sending to Zapier:\n" + "\n".join(lines),
+        extra={
+            "event": "zapier_payload_sending",
+            "message_id": message_id,
+            "direction": direction,
+        },
+    )
 
 
 def _get_forwarder(request: Request) -> ZapierForwarder:
@@ -48,6 +116,10 @@ def _get_forwarder(request: Request) -> ZapierForwarder:
 
 def _get_idempotency_cache(request: Request) -> IdempotencyCache:
     return request.app.state.idempotency_cache
+
+
+def _get_rc_api_client(request: Request) -> RCApiClient:
+    return request.app.state.rc_api_client
 
 
 @router.get(
@@ -83,11 +155,12 @@ async def rc_webhook_validation(
 
 @router.post(
     "/webhook",
-    summary="RC Inbound SMS Webhook Receiver",
+    summary="RC SMS Webhook Receiver",
     description=(
-        "Receives all inbound SMS event notifications from RingCentral. "
-        "Validates the Verification-Token header, deduplicates by message ID, "
-        "builds the full metadata payload, and forwards to Zapier in near real-time."
+        "Receives all SMS event notifications from RingCentral. "
+        "Validates the Verification-Token header, fetches full message data "
+        "from the RC API, builds the full metadata payload, and forwards "
+        "both inbound and outbound SMS to Zapier in near real-time."
     ),
     status_code=status.HTTP_200_OK,
 )
@@ -96,6 +169,7 @@ async def rc_webhook_receiver(
     settings: Settings = Depends(get_settings),
     forwarder: ZapierForwarder = Depends(_get_forwarder),
     idempotency: IdempotencyCache = Depends(_get_idempotency_cache),
+    rc_api: RCApiClient = Depends(_get_rc_api_client),
 ) -> dict[str, Any]:
     """
     POST /api/v1/rc/webhook
@@ -104,20 +178,18 @@ async def rc_webhook_receiver(
       0. Handle Validation-Token challenge (subscription creation/renewal).
       1. Validate Verification-Token header.
       2. Parse raw JSON body.
-      3. Parse into RCWebhookEvent schema.
-      4. Filter: only process Inbound SMS.
-      5. Idempotency check on message ID.
-      6. Build ZapierPayload.
-      7. Forward to Zapier (with retry).
-      8. Mark message ID as seen.
-      9. Return 200 OK to RC.
+      3. Parse into RCWebhookEvent (change notification).
+      4. Extract new message IDs from changes[].
+      5. Fetch each message from RC REST API (full content).
+      6. For each fetched message:
+         a. Idempotency check on message ID.
+         b. Build ZapierPayload with full message data.
+         c. Forward to Zapier (with retry).
+         d. Mark message ID as seen.
+      7. Return 200 OK to RC.
     """
 
     # ── Step 0: Handle RC Validation Challenge ─────────────────────
-    # When creating/renewing a webhook subscription, RC sends a POST
-    # with a "Validation-Token" header. We MUST echo it back in the
-    # response header with 200 OK. This is separate from the
-    # "Verification-Token" used for ongoing push authentication.
     validation_token = request.headers.get("Validation-Token")
     if validation_token:
         logger.info(
@@ -159,7 +231,15 @@ async def rc_webhook_receiver(
             detail="Invalid JSON body",
         )
 
-    # ── Step 3: Parse into schema ──────────────────────────────────
+    logger.info(
+        "RC webhook notification received",
+        extra={
+            "event": "rc_notification_received",
+            "raw_body_keys": list(raw_body.keys()),
+        },
+    )
+
+    # ── Step 3: Parse into RCWebhookEvent ──────────────────────────
     try:
         event = RCWebhookEvent.model_validate(raw_body)
     except Exception as exc:
@@ -167,72 +247,165 @@ async def rc_webhook_receiver(
             "RC event does not match expected schema",
             extra={"event": "schema_validation_error", "error": str(exc)},
         )
-        # Return 200 so RC doesn't retry non-SMS events
         return {"status": "ignored", "reason": "schema_validation_failed"}
 
-    message = event.to_rc_message()
+    # ── Step 4: Extract new SMS message IDs from notification ──────
+    new_message_ids = event.get_new_message_ids()
+    account_id = event.get_account_id()
+    extension_id = event.get_extension_id()
 
-    # ── Step 4: Filter — Inbound SMS only ─────────────────────────
-    if message.type and message.type.upper() != "SMS":
+    if not new_message_ids:
         logger.info(
-            "Ignoring non-SMS event",
-            extra={"event": "event_filtered", "message_type": message.type},
-        )
-        return {"status": "ignored", "reason": f"message_type={message.type}"}
-
-    if message.direction and message.direction.lower() != "inbound":
-        logger.info(
-            "Ignoring outbound message",
-            extra={"event": "event_filtered", "direction": message.direction},
-        )
-        return {"status": "ignored", "reason": "outbound"}
-
-    # ── Step 5: Idempotency check ──────────────────────────────────
-    message_id = message.id or event.uuid or ""
-
-    if message_id and idempotency.is_duplicate(message_id):
-        logger.info(
-            "Duplicate message suppressed",
-            extra={"event": "duplicate_suppressed", "message_id": message_id},
-        )
-        return {"status": "duplicate", "message_id": message_id}
-
-    # ── Step 6: Build Zapier payload ───────────────────────────────
-    zapier_payload = ZapierPayload.from_rc_event(
-        event=event,
-        message=message,
-        raw_body=raw_body,
-    )
-
-    # ── Step 7: Forward to Zapier ──────────────────────────────────
-    try:
-        result = await forwarder.send(zapier_payload)
-    except ZapierForwardError as exc:
-        # Return 200 to RC so it doesn't retry (we log the failure internally)
-        logger.error(
-            "Zapier forward permanently failed — message NOT forwarded",
+            "No new SMS message IDs in notification",
             extra={
-                "event": "zapier_forward_permanent_failure",
-                "message_id": message_id,
-                "attempts": exc.attempts,
-                "last_status_code": exc.last_status_code,
+                "event": "no_sms_messages",
+                "body_changes": (
+                    [c.model_dump() for c in event.body.changes]
+                    if event.body and event.body.changes
+                    else []
+                ),
             },
         )
-        # Don't mark as seen — allows manual retry
+        return {"status": "ignored", "reason": "no_new_sms_message_ids"}
+
+    if not account_id or not extension_id:
+        logger.error(
+            "Cannot determine accountId or extensionId from notification",
+            extra={
+                "event": "missing_ids",
+                "account_id": account_id,
+                "extension_id": extension_id,
+            },
+        )
+        return {"status": "error", "reason": "missing_account_or_extension_id"}
+
+    logger.info(
+        "Processing SMS notification",
+        extra={
+            "event": "processing_notification",
+            "account_id": account_id,
+            "extension_id": extension_id,
+            "new_message_ids": new_message_ids,
+            "message_count": len(new_message_ids),
+        },
+    )
+
+    # ── Step 5: Fetch full message data from RC API ────────────────
+    fetched_messages = await rc_api.get_messages_batch(
+        account_id=account_id,
+        extension_id=extension_id,
+        message_ids=new_message_ids,
+    )
+
+    if not fetched_messages:
+        logger.warning(
+            "No messages could be fetched from RC API",
+            extra={
+                "event": "no_messages_fetched",
+                "attempted_ids": new_message_ids,
+            },
+        )
         return {
-            "status": "forward_failed",
-            "message_id": message_id,
-            "detail": "Zapier unreachable after all retries",
+            "status": "error",
+            "reason": "could_not_fetch_messages",
+            "attempted_ids": new_message_ids,
         }
 
-    # ── Step 8: Mark message as seen ──────────────────────────────
-    if message_id:
-        idempotency.mark_seen(message_id)
+    # ── Step 6: Process each fetched message ───────────────────────
+    results = []
 
-    # ── Step 9: Return 200 to RC ───────────────────────────────────
+    for raw_msg in fetched_messages:
+        try:
+            message = RCMessage.model_validate(raw_msg)
+        except Exception as exc:
+            logger.warning(
+                "Failed to parse fetched RC message",
+                extra={
+                    "event": "message_parse_error",
+                    "error": str(exc),
+                    "raw_msg_id": raw_msg.get("id"),
+                },
+            )
+            continue
+
+        message_id = str(message.id) if message.id else ""
+
+        # Filter: only process SMS type
+        if message.type and message.type.upper() != "SMS":
+            logger.info(
+                "Ignoring non-SMS message",
+                extra={
+                    "event": "event_filtered",
+                    "message_type": message.type,
+                    "message_id": message_id,
+                },
+            )
+            continue
+
+        # Step 6a: Idempotency check
+        if message_id and idempotency.is_duplicate(message_id):
+            logger.info(
+                "Duplicate message suppressed",
+                extra={"event": "duplicate_suppressed", "message_id": message_id},
+            )
+            results.append({
+                "message_id": message_id,
+                "status": "duplicate",
+                "direction": message.direction,
+            })
+            continue
+
+        # Step 6b: Build Zapier payload from full message data
+        zapier_payload = ZapierPayload.from_rc_message(
+            message=message,
+            raw_message=raw_msg,
+            account_id=account_id,
+            extension_id=extension_id,
+            subscription_id=event.subscription_id,
+            rc_event_type=event.event,
+            rc_event_uuid=event.uuid,
+        )
+
+        # Print the exact Zapier payload to terminal
+        payload_dict = zapier_payload.model_dump(mode="json")
+        _log_zapier_payload(payload_dict, message_id)
+
+        # Step 6c: Forward to Zapier
+        try:
+            result = await forwarder.send(zapier_payload)
+            # Step 6d: Mark message as seen
+            if message_id:
+                idempotency.mark_seen(message_id)
+
+            results.append({
+                "message_id": result.message_id,
+                "status": "forwarded",
+                "direction": message.direction,
+                "attempts": result.attempts,
+                "zapier_status_code": result.final_status_code,
+            })
+        except ZapierForwardError as exc:
+            logger.error(
+                "Zapier forward permanently failed",
+                extra={
+                    "event": "zapier_forward_permanent_failure",
+                    "message_id": message_id,
+                    "direction": message.direction,
+                    "attempts": exc.attempts,
+                    "last_status_code": exc.last_status_code,
+                },
+            )
+            results.append({
+                "message_id": message_id,
+                "status": "forward_failed",
+                "direction": message.direction,
+                "detail": "Zapier unreachable after all retries",
+            })
+
+    # ── Step 7: Return 200 to RC ───────────────────────────────────
     return {
-        "status": "forwarded",
-        "message_id": result.message_id,
-        "attempts": result.attempts,
-        "zapier_status_code": result.final_status_code,
+        "status": "processed",
+        "total_message_ids": len(new_message_ids),
+        "fetched": len(fetched_messages),
+        "results": results,
     }

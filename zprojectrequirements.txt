@@ -1,0 +1,61 @@
+Scope of Work (SOW)
+Project: RC Inbound SMS Webhook Routing for DNC Detection
+1. Project Overview
+Route all inbound SMS messages from RC (across all users) to a designated Zapier webhook
+endpoint for automated Do Not Contact (DNC) language detection.
+Webhook URL:
+https://hooks.zapier.com/hooks/catch/9108555/u0ykv0l/
+2. Objective
+Ensure 100% of inbound SMS messages received through RC are transmitted in real time to the
+specified webhook endpoint with complete associated metadata.
+3. Scope of Work
+3.1 Message Capture
+- Capture all inbound SMS messages received via RC.
+- Applies to all users/accounts within RC without exception.
+- No filtering by user, number, or message content.
+3.2 Webhook Transmission
+- Send each inbound SMS to the webhook via HTTPS POST.
+- Transmission must occur in near real time.
+3.3 Payload Requirements
+The JSON payload must include all available metadata associated with the inbound SMS, including
+but not limited to:
+- Inbound phone number (sender)
+- Phone number of the RC user receiving the SMS
+- SMS message body/content
+- Message ID
+- Timestamp (UTC preferred)
+- Account/user ID
+- Conversation/thread ID
+- Delivery status
+- Carrier information
+- Message direction flag (inbound)
+- Any internal RC metadata tags
+Developer must transmit all available metadata fields exposed by RC’s SMS object.
+3.4 Reliability & Error Handling
+- Minimum 3 retries with exponential backoff for failed webhook calls.
+- Log HTTP response codes and errors.
+- Prevent duplicate transmissions unless retrying failed attempts.
+3.5 Security
+- HTTPS only.
+- No hardcoded credentials.
+- Protect API keys via environment variables.
+3.6 Testing
+- Verify webhook receives full metadata payload.
+- Test inbound messages from multiple RC users.
+- Validate retry behavior on forced failure.
+- Confirm no message loss.
+4. Deliverables
+- Functional real-time webhook integration.
+- Documentation of final JSON payload structure.
+- Logging mechanism for transmission success/failure.
+- Test confirmation demonstrating correct operation.
+5. Acceptance Criteria
+- 100% of inbound SMS messages are transmitted.
+- Payload contains full metadata set as available from RC.
+- No message loss during testing.
+- Retry logic operates correctly.
+6. Out of Scope
+- DNC keyword detection logic.
+- Outbound SMS routing.
+- UI modifications.
+- Ongoing monitoring beyond initial deployment unless separately contracted.

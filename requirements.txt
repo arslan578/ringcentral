@@ -16,9 +16,6 @@ pydantic-settings>=2.2.0,<3.0.0
 # Idempotency cache (TTL-based in-memory deduplication)
 cachetools>=5.3.0,<6.0.0
 
-# Structured logging
-structlog>=24.1.0,<25.0.0
-
 # .env file loading
 python-dotenv>=1.0.0,<2.0.0
 

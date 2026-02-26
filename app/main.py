@@ -26,6 +26,7 @@ from app.api.v1.router import api_v1_router
 from app.config import get_settings
 from app.core.idempotency import IdempotencyCache
 from app.core.logging import setup_logging
+from app.services.rc_api_client import RCApiClient
 from app.services.zapier_forwarder import ZapierForwarder
 
 logger = logging.getLogger(__name__)
@@ -67,12 +68,20 @@ async def lifespan(app: FastAPI):
         maxsize=settings.idempotency_cache_max_size,
         ttl=settings.idempotency_cache_ttl_seconds,
     )
+    app.state.rc_api_client = RCApiClient(
+        server_url=settings.rc_server_url,
+        client_id=settings.rc_client_id,
+        client_secret=settings.rc_client_secret,
+        jwt_token=settings.rc_jwt_token,
+        http_client=http_client,
+    )
 
     logger.info(
         "Startup complete — ready to receive RC webhooks",
         extra={
             "zapier_url": settings.zapier_webhook_url,
             "max_retries": settings.zapier_max_retries,
+            "rc_server_url": settings.rc_server_url,
         },
     )
 

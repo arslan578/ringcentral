@@ -22,6 +22,7 @@ WEBHOOK_URL = "https://hooks.zapier.com/hooks/catch/test/"
 
 def _sample_payload() -> ZapierPayload:
     return ZapierPayload(
+        event_type="inbound_sms",
         message_id="test-msg-001",
         direction="Inbound",
         from_number="+15550001111",
@@ -137,3 +138,44 @@ async def test_exponential_backoff_delays():
 
     # Backoff: 1.0 * 2^0 = 1.0, 1.0 * 2^1 = 2.0
     assert sleep_calls == [1.0, 2.0]
+
+
+@pytest.mark.asyncio
+async def test_raises_on_timeout():
+    """Timeout on all attempts should raise ZapierForwardError with None status code."""
+    mock_client = AsyncMock(spec=httpx.AsyncClient)
+    mock_client.post = AsyncMock(side_effect=httpx.ReadTimeout("Read timed out"))
+
+    forwarder = ZapierForwarder(
+        webhook_url=WEBHOOK_URL, http_client=mock_client, max_retries=3, base_delay=0.01
+    )
+
+    with patch("asyncio.sleep", new_callable=AsyncMock):
+        with pytest.raises(ZapierForwardError) as exc_info:
+            await forwarder.send(_sample_payload())
+
+    assert exc_info.value.attempts == 3
+    assert exc_info.value.last_status_code is None
+
+
+@pytest.mark.asyncio
+async def test_success_after_timeout_then_retry():
+    """Timeout on first attempt, success on second."""
+    mock_client = AsyncMock(spec=httpx.AsyncClient)
+    mock_client.post = AsyncMock(
+        side_effect=[
+            httpx.ReadTimeout("Read timed out"),
+            _make_response(200),
+        ]
+    )
+
+    forwarder = ZapierForwarder(
+        webhook_url=WEBHOOK_URL, http_client=mock_client, max_retries=3, base_delay=0.01
+    )
+
+    with patch("asyncio.sleep", new_callable=AsyncMock):
+        result = await forwarder.send(_sample_payload())
+
+    assert result.success is True
+    assert result.attempts == 2
+    assert result.final_status_code == 200

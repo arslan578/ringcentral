@@ -5,18 +5,19 @@ Defines the exact JSON structure sent to the Zapier webhook.
 
 Design goals:
   - All SOW-required fields are explicitly named and documented.
-  - raw_rc_payload preserves the complete original RC body so Zapier/Zap
+  - raw_rc_message preserves the complete original RC message so Zapier/Zap
     downstream logic can access any field we didn't explicitly map.
   - Serializes datetimes as ISO-8601 UTC strings.
+  - Handles BOTH inbound and outbound SMS messages.
 """
 from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field, model_serializer
+from pydantic import BaseModel, Field
 
-from app.schemas.rc_message import RCMessage, RCWebhookEvent
+from app.schemas.rc_message import RCMessage
 
 
 class ZapierPayload(BaseModel):
@@ -27,15 +28,15 @@ class ZapierPayload(BaseModel):
 
     # ── Source identification ──────────────────────────────────────
     source: str = Field(default="ringcentral", description="Always 'ringcentral'")
-    event_type: str = Field(default="inbound_sms", description="Always 'inbound_sms'")
+    event_type: str = Field(description="'inbound_sms' or 'outbound_sms'")
 
     # ── Message identity ───────────────────────────────────────────
     message_id: str = Field(description="RC unique message ID")
-    direction: str = Field(description="Always 'Inbound' per SOW filter")
+    direction: str = Field(description="'Inbound' or 'Outbound'")
 
     # ── Party phone numbers ────────────────────────────────────────
     from_number: str = Field(description="Sender E.164 phone number")
-    to_number: str = Field(description="Receiving RC user E.164 phone number")
+    to_number: str = Field(description="Receiving E.164 phone number")
 
     # ── Content ───────────────────────────────────────────────────
     body: str = Field(description="SMS message body text")
@@ -56,7 +57,7 @@ class ZapierPayload(BaseModel):
 
     # ── Status flags ──────────────────────────────────────────────
     read_status: Optional[str] = Field(None, description="e.g. 'Unread'")
-    message_status: Optional[str] = Field(None, description="e.g. 'Received'")
+    message_status: Optional[str] = Field(None, description="e.g. 'Received' or 'Sent'")
     delivery_error_code: Optional[str] = Field(None, description="Carrier error code if any")
     priority: Optional[str] = Field(None, description="e.g. 'Normal'")
     availability: Optional[str] = Field(None, description="e.g. 'Alive'")
@@ -68,25 +69,33 @@ class ZapierPayload(BaseModel):
     rc_event_type: Optional[str] = Field(None, description="RC event URI path")
     rc_event_uuid: Optional[str] = Field(None, description="RC notification UUID")
 
-    # ── Full raw payload (SOW: transmit all available metadata) ───
+    # ── Full raw message (SOW: transmit all available metadata) ───
     raw_rc_payload: dict[str, Any] = Field(
-        description="Complete original RC notification body for full metadata access"
+        description="Complete original RC message object for full metadata access"
     )
 
     @classmethod
-    def from_rc_event(
+    def from_rc_message(
         cls,
-        event: RCWebhookEvent,
         message: RCMessage,
-        raw_body: dict[str, Any],
+        raw_message: dict[str, Any],
+        account_id: Optional[str] = None,
+        extension_id: Optional[str] = None,
+        subscription_id: Optional[str] = None,
+        rc_event_type: Optional[str] = None,
+        rc_event_uuid: Optional[str] = None,
     ) -> "ZapierPayload":
         """
-        Factory: build a ZapierPayload from a parsed RC event + message.
+        Factory: build a ZapierPayload from a full RC message (fetched from API).
 
         Args:
-            event:    The parsed top-level RC notification envelope.
-            message:  The extracted RCMessage from the body.
-            raw_body: The original, unparsed request JSON dict.
+            message:        The parsed RCMessage (from RC REST API).
+            raw_message:    The original, unparsed message JSON dict.
+            account_id:     RC account ID from the notification.
+            extension_id:   RC extension ID from the notification.
+            subscription_id: RC webhook subscription ID.
+            rc_event_type:  RC event URI path.
+            rc_event_uuid:  RC notification UUID.
         """
         now_utc = datetime.now(timezone.utc).isoformat()
 
@@ -96,36 +105,45 @@ class ZapierPayload(BaseModel):
             if ts.tzinfo is None:
                 ts = ts.replace(tzinfo=timezone.utc)
             timestamp_utc = ts.isoformat()
-        elif event.timestamp:
-            ts = event.timestamp
-            if ts.tzinfo is None:
-                ts = ts.replace(tzinfo=timezone.utc)
-            timestamp_utc = ts.isoformat()
         else:
             timestamp_utc = now_utc
 
+        # Determine direction and event_type
+        direction = message.direction or "Unknown"
+        if direction.lower() == "inbound":
+            event_type = "inbound_sms"
+        elif direction.lower() == "outbound":
+            event_type = "outbound_sms"
+        else:
+            event_type = "sms"
+
+        # Conversation ID
+        conv_id = None
+        if message.conversation_id:
+            conv_id = str(message.conversation_id)
+        elif message.conversation and message.conversation.id:
+            conv_id = str(message.conversation.id)
+
         return cls(
-            message_id=message.id or event.uuid or "unknown",
-            direction=message.direction or "Inbound",
+            event_type=event_type,
+            message_id=str(message.id) if message.id else "unknown",
+            direction=direction,
             from_number=message.from_number,
             to_number=message.to_number,
             body=message.body,
             timestamp_utc=timestamp_utc,
             received_at_utc=now_utc,
-            account_id=event.account_id,
-            extension_id=event.extension_id,
-            subscription_id=event.subscription_id,
-            conversation_id=(
-                message.conversation_id
-                or (message.conversation.id if message.conversation else None)
-            ),
+            account_id=account_id,
+            extension_id=extension_id,
+            subscription_id=subscription_id,
+            conversation_id=conv_id,
             read_status=message.read_status,
             message_status=message.message_status,
             delivery_error_code=message.delivery_error_code,
             priority=message.priority,
             availability=message.availability,
             attachment_count=len(message.attachments) if message.attachments else 0,
-            rc_event_type=event.event,
-            rc_event_uuid=event.uuid,
-            raw_rc_payload=raw_body,
+            rc_event_type=rc_event_type,
+            rc_event_uuid=rc_event_uuid,
+            raw_rc_payload=raw_message,
         )

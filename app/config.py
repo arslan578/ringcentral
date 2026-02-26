@@ -35,6 +35,22 @@ class Settings(BaseSettings):
         ...,
         description="Token set in RC Developer Console. Validated on every inbound push.",
     )
+    rc_server_url: str = Field(
+        default="https://platform.ringcentral.com",
+        description="RingCentral API server URL.",
+    )
+    rc_client_id: str = Field(
+        ...,
+        description="RingCentral OAuth2 client ID (app key).",
+    )
+    rc_client_secret: str = Field(
+        ...,
+        description="RingCentral OAuth2 client secret.",
+    )
+    rc_jwt_token: str = Field(
+        ...,
+        description="RingCentral JWT token for server-to-server auth.",
+    )
 
     # ── Zapier ─────────────────────────────────────────────────────
     zapier_webhook_url: str = Field(
