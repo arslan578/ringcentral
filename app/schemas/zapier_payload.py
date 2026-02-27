@@ -146,6 +146,7 @@ class ZapierPayload(BaseModel):
         # RC can return MULTIPLE recipients in the to[] array
         # (e.g. group SMS, department queues with multiple agents)
         # We capture the primary (to[0]) AND all recipients.
+        # best_number() uses fallback chain: phoneNumber → extensionNumber
         to_name = None
         to_location = None
         all_to_numbers_list: list[str] = []
@@ -155,17 +156,13 @@ class ZapierPayload(BaseModel):
             # Primary recipient
             to_name = message.to[0].name
             to_location = message.to[0].location
-            # Build full lists across ALL recipients
-            for recipient in message.to:
-                num = recipient.phone_number
-                name = recipient.name
-                if num:
-                    all_to_numbers_list.append(num)
-                if name:
-                    all_to_names_list.append(name)
+            # Build full lists across ALL recipients using best_number() fallback
+            all_to_numbers_list = message.all_to_phone_numbers()
+            all_to_names_list = [r.name for r in message.to if r.name]
 
         all_to_numbers = ", ".join(all_to_numbers_list) if all_to_numbers_list else None
         all_to_names = ", ".join(all_to_names_list) if all_to_names_list else None
+
 
         # -- Conversation ID --
         conv_id = None

@@ -117,9 +117,26 @@ class RCPhoneNumber(BaseModel):
     model_config = {"extra": "allow"}
 
     phone_number: Optional[str] = Field(None, alias="phoneNumber")
+    extension_number: Optional[str] = Field(None, alias="extensionNumber")
     name: Optional[str] = None
     location: Optional[str] = None
     message_status: Optional[str] = Field(None, alias="messageStatus")
+
+    def best_number(self) -> str:
+        """
+        Return the best available number identifier with fallback chain:
+          1. phoneNumber  (E.164 DID — preferred, always use if available)
+          2. extensionNumber (Internal RC extension e.g. '101')
+          3. Empty string (should never happen in practice)
+
+        RC uses phoneNumber for external DIDs and extensionNumber for
+        internal extensions. Both are valid identifiers.
+        """
+        if self.phone_number and self.phone_number.strip():
+            return self.phone_number.strip()
+        if self.extension_number and self.extension_number.strip():
+            return f"ext:{self.extension_number.strip()}"
+        return ""
 
 
 class RCAttachment(BaseModel):
@@ -183,17 +200,34 @@ class RCMessage(BaseModel):
 
     @property
     def from_number(self) -> str:
-        """Convenience: sender E.164 phone number."""
-        if self.from_ and self.from_.phone_number:
-            return self.from_.phone_number
+        """
+        Sender phone number with fallback chain:
+          1. from_.phoneNumber   (External DID or RC DID)
+          2. from_.extensionNumber (internal RC ext number)
+          3. Empty string
+        """
+        if self.from_:
+            return self.from_.best_number()
         return ""
 
     @property
     def to_number(self) -> str:
-        """Convenience: first recipient E.164 phone number."""
-        if self.to and self.to[0].phone_number:
-            return self.to[0].phone_number
+        """
+        Primary recipient phone number with fallback chain:
+          1. to[0].phoneNumber   (External DID or RC DID)
+          2. to[0].extensionNumber (internal RC ext number)
+          3. Empty string
+        NOTE: Use all_to_numbers() for multi-recipient messages.
+        """
+        if self.to and len(self.to) > 0:
+            return self.to[0].best_number()
         return ""
+
+    def all_to_phone_numbers(self) -> list[str]:
+        """Return phone numbers for ALL recipients (handles group SMS)."""
+        if not self.to:
+            return []
+        return [r.best_number() for r in self.to if r.best_number()]
 
     @property
     def body(self) -> str:
