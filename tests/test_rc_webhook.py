@@ -220,7 +220,6 @@ def test_inbound_sms_payload_has_all_required_fields(app, client: TestClient):
 
     # SMS message body/content
     assert zapier_payload.body == "Please remove me from your list"
-    assert zapier_payload.subject == "Please remove me from your list"
 
     # Message ID and type
     assert zapier_payload.message_id == "3610703867026"
@@ -339,7 +338,6 @@ def test_outbound_sms_payload_has_correct_fields(app, client: TestClient):
     assert payload.to_number == "+15550001111"     # external recipient
     assert payload.to_name == "John Doe"
     assert payload.body == "Hi there, how can we help you?"
-    assert payload.subject == "Hi there, how can we help you?"
     assert payload.message_id == "3610703807026"
     assert payload.message_type == "SMS"
     assert payload.message_status == "Sent"
@@ -651,7 +649,7 @@ def test_payload_has_no_raw_rc_payload_field(app, client: TestClient):
     # All important fields must be flat top-level keys
     required_flat_fields = [
         "source", "event_type", "message_id", "message_type", "direction",
-        "from_number", "to_number", "subject", "body",
+        "from_number", "to_number", "body",
         "timestamp_utc", "received_at_utc",
         "account_id", "extension_id", "conversation_id",
         "read_status", "message_status", "priority", "availability",

@@ -50,7 +50,6 @@ class ZapierPayload(BaseModel):
     all_to_names: Optional[str] = Field(None, description="All recipient names, comma-separated")
 
     # ── Content ───────────────────────────────────────────────────
-    subject: str = Field(default="", description="SMS subject (same as body for SMS)")
     body: str = Field(description="SMS message body text")
 
     # ── Timestamps ────────────────────────────────────────────────
