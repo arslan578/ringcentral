@@ -21,6 +21,8 @@ os.environ.setdefault("RC_CLIENT_ID", "test-client-id")
 os.environ.setdefault("RC_CLIENT_SECRET", "test-client-secret")
 os.environ.setdefault("RC_JWT_TOKEN", "test-jwt-token")
 os.environ.setdefault("RC_SERVER_URL", "https://platform.ringcentral.com")
+os.environ.setdefault("RC_ACCOUNT_SCOPE", "company_wide")
+os.environ.setdefault("RC_WEBHOOK_DELIVERY_URL", "https://test-webhook.example.com/api/v1/rc/webhook")
 
 # ── Now safe to import app modules ────────────────────────────────
 import pytest

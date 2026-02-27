@@ -105,6 +105,108 @@ class RCApiClient:
             )
             return self._access_token
 
+    # ── Extension listing (for company-wide subscriptions) ──────
+
+    async def list_extensions(
+        self,
+        account_id: str = "~",
+        status_filter: str = "Enabled",
+    ) -> list[dict[str, Any]]:
+        """
+        List all extensions in the account.
+
+        GET /restapi/v1.0/account/{accountId}/extension?status={status}&perPage=1000
+
+        Used to build per-extension event filters so the webhook
+        subscription covers ALL users, not just the JWT owner.
+        Returns a list of extension dicts.
+        """
+        token = await self._ensure_token()
+
+        all_extensions: list[dict[str, Any]] = []
+        page = 1
+        per_page = 1000
+
+        while True:
+            url = (
+                f"{self._server_url}/restapi/v1.0/account/{account_id}/extension"
+                f"?status={status_filter}&perPage={per_page}&page={page}"
+            )
+
+            logger.info(
+                "Listing account extensions",
+                extra={
+                    "event": "rc_list_extensions",
+                    "page": page,
+                    "per_page": per_page,
+                },
+            )
+
+            try:
+                response = await self._http.get(
+                    url,
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Accept": "application/json",
+                    },
+                    timeout=30.0,
+                )
+
+                if not response.is_success:
+                    logger.error(
+                        "Failed to list extensions",
+                        extra={
+                            "event": "rc_list_extensions_error",
+                            "status_code": response.status_code,
+                            "response_body": response.text[:500],
+                        },
+                    )
+                    break
+
+                data = response.json()
+                records = data.get("records", [])
+                all_extensions.extend(records)
+
+                # Check pagination
+                paging = data.get("paging", {})
+                total_pages = paging.get("totalPages", 1)
+
+                logger.info(
+                    "Extensions page fetched",
+                    extra={
+                        "event": "rc_extensions_page",
+                        "page": page,
+                        "total_pages": total_pages,
+                        "records_on_page": len(records),
+                        "total_so_far": len(all_extensions),
+                    },
+                )
+
+                if page >= total_pages:
+                    break
+                page += 1
+
+            except (httpx.TimeoutException, httpx.RequestError) as exc:
+                logger.error(
+                    "Network error listing extensions",
+                    extra={
+                        "event": "rc_list_extensions_network_error",
+                        "error": str(exc),
+                    },
+                )
+                break
+
+        logger.info(
+            "Extension listing complete",
+            extra={
+                "event": "rc_extensions_listed",
+                "total_extensions": len(all_extensions),
+            },
+        )
+        return all_extensions
+
+    # ── Message fetching ──────────────────────────────────────────
+
     async def get_message(
         self,
         account_id: str,

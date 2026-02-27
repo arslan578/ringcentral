@@ -78,12 +78,14 @@ async def lifespan(app: FastAPI):
     )
 
     # ── Subscription auto-management ────────────────────────────
+    is_company_wide = settings.rc_account_scope.lower() == "company_wide"
     sub_manager: RCSubscriptionManager | None = None
     if settings.rc_webhook_delivery_url:
         sub_manager = RCSubscriptionManager(
             rc_api=app.state.rc_api_client,
             delivery_url=settings.rc_webhook_delivery_url,
             verification_token=settings.rc_webhook_verification_token,
+            company_wide=is_company_wide,
         )
         app.state.subscription_manager = sub_manager
 
@@ -100,7 +102,10 @@ async def lifespan(app: FastAPI):
         sub_manager.start_background_renewal()
         logger.info(
             "Subscription auto-renewal loop started",
-            extra={"event": "subscription_renewal_started"},
+            extra={
+                "event": "subscription_renewal_started",
+                "scope": "company_wide" if is_company_wide else "single_extension",
+            },
         )
     else:
         app.state.subscription_manager = None
@@ -117,6 +122,7 @@ async def lifespan(app: FastAPI):
             "max_retries": settings.zapier_max_retries,
             "rc_server_url": settings.rc_server_url,
             "auto_subscription": bool(settings.rc_webhook_delivery_url),
+            "scope": settings.rc_account_scope,
         },
     )
 

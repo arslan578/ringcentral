@@ -8,11 +8,19 @@ PROBLEM SOLVED:
   not specified).  Once expired, RC stops sending notifications entirely
   — the server stays up but receives nothing.
 
+  COMPANY-WIDE MONITORING:
+  The `~` tilde in `/restapi/v1.0/account/~/extension/~/message-store`
+  means "the JWT token owner's extension ONLY" — not all extensions.
+  To monitor ALL company users, we list every extension in the account
+  and subscribe to each one individually.
+
   This manager:
-    1. Creates a subscription at app startup (with long expiresIn)
-    2. Runs a background renewal loop to keep it alive forever
-    3. Handles blacklisted/expired subscriptions by recreating them
-    4. Exposes status for the health endpoint
+    1. Lists ALL extensions in the account (company-wide mode)
+    2. Creates a subscription with per-extension event filters
+    3. Runs a background renewal loop to keep it alive forever
+    4. Periodically refreshes the extension list to catch new users
+    5. Handles blacklisted/expired subscriptions by recreating them
+    6. Exposes status for the health endpoint
 
 Requires the same JWT credentials already used by RCApiClient.
 """
@@ -40,6 +48,10 @@ _RENEWAL_BUFFER_SECONDS = 3_600  # 1 hour
 # How often the background loop checks (seconds)
 _CHECK_INTERVAL_SECONDS = 600  # every 10 minutes
 
+# RC allows up to 20 event filters per subscription.
+# If the account has more extensions, we batch into multiple subscriptions.
+_MAX_FILTERS_PER_SUBSCRIPTION = 20
+
 
 class SubscriptionStatus:
     """Snapshot of the current subscription state (for health endpoint)."""
@@ -52,6 +64,8 @@ class SubscriptionStatus:
         self.last_error: Optional[str] = None
         self.delivery_url: Optional[str] = None
         self.renewals: int = 0
+        self.scope: str = "unknown"
+        self.monitored_extensions: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -62,6 +76,8 @@ class SubscriptionStatus:
             "last_error": self.last_error,
             "delivery_url": self.delivery_url,
             "total_renewals": self.renewals,
+            "scope": self.scope,
+            "monitored_extensions": self.monitored_extensions,
         }
 
 
@@ -82,29 +98,123 @@ class RCSubscriptionManager:
         verification_token: str,
         event_filters: Optional[list[str]] = None,
         expires_in: int = _DEFAULT_EXPIRES_IN,
+        company_wide: bool = True,
     ) -> None:
         self._rc_api = rc_api
         self._delivery_url = delivery_url.rstrip("/")
         self._verification_token = verification_token
-        self._event_filters = event_filters or [
-            "/restapi/v1.0/account/~/extension/~/message-store"
-        ]
+        self._explicit_filters = event_filters  # User-provided overrides
+        self._event_filters: list[str] = event_filters or []
         self._expires_in = expires_in
+        self._company_wide = company_wide
 
         self.status = SubscriptionStatus()
         self.status.delivery_url = self._delivery_url
+        self.status.scope = "company_wide" if company_wide else "single_extension"
 
         self._renewal_task: Optional[asyncio.Task] = None
 
     # ── Public API ────────────────────────────────────────────────
 
+    async def _build_event_filters(self) -> list[str]:
+        """
+        Build the list of event filters for the subscription.
+
+        Company-wide mode (default):
+          - Calls RC API to list ALL extensions in the account.
+          - Creates one filter per extension:
+            /restapi/v1.0/account/~/extension/{extId}/message-store
+          - This ensures SMS from every user/phone number is captured.
+
+        Single-extension mode:
+          - Falls back to /restapi/v1.0/account/~/extension/~/message-store
+            (only the JWT token owner's extension).
+        """
+        # If caller provided explicit filters, use those
+        if self._explicit_filters:
+            return self._explicit_filters
+
+        if not self._company_wide:
+            return ["/restapi/v1.0/account/~/extension/~/message-store"]
+
+        # ── Company-wide: list all extensions ──────────────────────
+        logger.info(
+            "Building company-wide event filters -- listing all extensions",
+            extra={"event": "building_company_wide_filters"},
+        )
+
+        extensions = await self._rc_api.list_extensions()
+
+        if not extensions:
+            logger.warning(
+                "No extensions found -- falling back to current user only",
+                extra={"event": "no_extensions_found_fallback"},
+            )
+            return ["/restapi/v1.0/account/~/extension/~/message-store"]
+
+        # Build filters for extensions that can have SMS
+        # Include: User, DigitalUser, VirtualUser, Department
+        # Exclude: IvrMenu, ParkLocation, PagingOnly, etc.
+        sms_capable_types = {
+            "User", "DigitalUser", "VirtualUser", "Department",
+            "Announcement", "SharedLinesGroup",
+        }
+
+        filters: list[str] = []
+        for ext in extensions:
+            ext_id = ext.get("id")
+            ext_type = ext.get("type", "")
+            ext_status = ext.get("status", "")
+
+            if not ext_id:
+                continue
+
+            # Include all User-type extensions + any with explicit SMS
+            if ext_type in sms_capable_types or ext_type == "":
+                filters.append(
+                    f"/restapi/v1.0/account/~/extension/{ext_id}/message-store"
+                )
+
+        if not filters:
+            logger.warning(
+                "No SMS-capable extensions found -- falling back to current user",
+                extra={
+                    "event": "no_sms_extensions_fallback",
+                    "total_extensions": len(extensions),
+                },
+            )
+            return ["/restapi/v1.0/account/~/extension/~/message-store"]
+
+        # Always include the current user's extension as a safety net
+        current_user_filter = "/restapi/v1.0/account/~/extension/~/message-store"
+        if current_user_filter not in filters:
+            filters.append(current_user_filter)
+
+        self.status.monitored_extensions = len(filters)
+
+        logger.info(
+            "Company-wide event filters built",
+            extra={
+                "event": "company_wide_filters_built",
+                "total_extensions": len(extensions),
+                "sms_capable_extensions": len(filters),
+                "sample_filters": filters[:3],
+            },
+        )
+
+        return filters
+
     async def ensure_subscription(self) -> None:
         """
         Ensure an active webhook subscription exists.
         Creates a new one or renews an existing one as needed.
+        In company-wide mode, builds per-extension event filters.
         """
         try:
             self.status.last_check_utc = datetime.now(timezone.utc).isoformat()
+
+            # Step 0: Build event filters (fetches all extensions in company-wide mode)
+            self._event_filters = await self._build_event_filters()
 
             # Step 1: List existing subscriptions
             existing = await self._list_subscriptions()

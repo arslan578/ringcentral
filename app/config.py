@@ -59,6 +59,14 @@ class Settings(BaseSettings):
             "If empty, auto-subscription is disabled."
         ),
     )
+    rc_account_scope: str = Field(
+        default="company_wide",
+        description=(
+            "Subscription scope. "
+            "'company_wide' = monitor ALL users/phone numbers in the account. "
+            "'single' = monitor only the JWT token owner's extension."
+        ),
+    )
 
     # ── Zapier ─────────────────────────────────────────────────────
     zapier_webhook_url: str = Field(

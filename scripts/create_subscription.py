@@ -148,6 +148,45 @@ def delete_all_subscriptions() -> int:
     return deleted
 
 
+def _build_company_wide_filters() -> list[str]:
+    """
+    List all extensions in the account and build per-extension event filters.
+    Falls back to ~/extension/~/message-store if listing fails.
+    """
+    ext_url = f"{RC_SERVER_URL}/restapi/v1.0/account/~/extension?status=Enabled&perPage=1000"
+    filters: list[str] = []
+
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.get(ext_url, headers=_get_auth_headers())
+            if resp.is_success:
+                records = resp.json().get("records", [])
+                sms_types = {"User", "DigitalUser", "VirtualUser", "Department", "SharedLinesGroup"}
+                for ext in records:
+                    ext_id = ext.get("id")
+                    ext_type = ext.get("type", "")
+                    if ext_id and (ext_type in sms_types or ext_type == ""):
+                        filters.append(
+                            f"/restapi/v1.0/account/~/extension/{ext_id}/message-store"
+                        )
+                print(f"  Found {len(records)} extensions, {len(filters)} SMS-capable")
+            else:
+                print(f"  Failed to list extensions (HTTP {resp.status_code})")
+    except Exception as exc:
+        print(f"  Error listing extensions: {exc}")
+
+    if not filters:
+        print("  Falling back to single extension (JWT owner)")
+        filters = ["/restapi/v1.0/account/~/extension/~/message-store"]
+
+    # Always include the current user as safety net
+    fallback = "/restapi/v1.0/account/~/extension/~/message-store"
+    if fallback not in filters:
+        filters.append(fallback)
+
+    return filters
+
+
 def create_subscription() -> bool:
     """Create a new webhook subscription for inbound SMS. Returns True on success."""
     _prompt_webhook_url()
@@ -161,16 +200,25 @@ def create_subscription() -> bool:
     print(f"  Token     : {RC_WEBHOOK_VERIFICATION_TOKEN}")
     print("=" * 70)
 
+    # ── Build event filters (company-wide if possible) ─────────
+    account_scope = os.getenv("RC_ACCOUNT_SCOPE", "company_wide").lower()
+    if account_scope == "company_wide":
+        print("\n  Scope: COMPANY-WIDE (listing all extensions...)")
+        event_filters = _build_company_wide_filters()
+    else:
+        print("\n  Scope: SINGLE EXTENSION (JWT owner only)")
+        event_filters = ["/restapi/v1.0/account/~/extension/~/message-store"]
+
+    print(f"  Event filters: {len(event_filters)} extension(s)")
+
     subscription_body = {
-        "eventFilters": [
-            "/restapi/v1.0/account/~/extension/~/message-store"
-        ],
+        "eventFilters": event_filters,
         "deliveryMode": {
             "transportType": "WebHook",
             "address": WEBHOOK_DELIVERY_URL,
             "verificationToken": RC_WEBHOOK_VERIFICATION_TOKEN,
         },
-        "expiresIn": 604800,  # 7 days (in seconds) — previously missing, causing 15-min default expiry!
+        "expiresIn": 604800,  # 7 days (in seconds)
     }
 
     print(f"\nRequest JSON:\n{json.dumps(subscription_body, indent=2)}\n")
