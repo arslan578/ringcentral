@@ -87,7 +87,7 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 ### Production (Direct)
 ```powershell
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
 ```
 
 ### Production (Docker)

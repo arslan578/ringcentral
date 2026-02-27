@@ -109,8 +109,30 @@ class RCSubscriptionManager:
             # Step 1: List existing subscriptions
             existing = await self._list_subscriptions()
 
-            # Step 2: Find one matching our delivery URL
-            matching = self._find_matching_subscription(existing)
+            # Step 2: Find ALL matching our delivery URL and deduplicate
+            all_matching = self._find_all_matching_subscriptions(existing)
+
+            # If multiple subscriptions exist for our URL, delete extras
+            if len(all_matching) > 1:
+                logger.warning(
+                    "Multiple subscriptions found for same URL -- cleaning up duplicates",
+                    extra={
+                        "event": "subscription_duplicate_cleanup",
+                        "count": len(all_matching),
+                        "ids": [s.get("id") for s in all_matching],
+                    },
+                )
+                # Keep the first active one, delete the rest
+                kept = None
+                for sub in all_matching:
+                    if kept is None and sub.get("status", "").lower() == "active":
+                        kept = sub
+                    else:
+                        await self._delete_subscription(str(sub.get("id", "")))
+                # If none were active, kept is None and we'll create below
+                all_matching = [kept] if kept else []
+
+            matching = all_matching[0] if all_matching else None
 
             if matching:
                 sub_status = matching.get("status", "").lower()
@@ -259,16 +281,17 @@ class RCSubscriptionManager:
         )
         return records
 
-    def _find_matching_subscription(
+    def _find_all_matching_subscriptions(
         self, subscriptions: list[dict[str, Any]]
-    ) -> Optional[dict[str, Any]]:
-        """Find a subscription matching our delivery URL."""
+    ) -> list[dict[str, Any]]:
+        """Find ALL subscriptions matching our delivery URL."""
+        matches = []
         for sub in subscriptions:
             delivery = sub.get("deliveryMode", {})
             address = delivery.get("address", "").rstrip("/")
             if address == self._delivery_url:
-                return sub
-        return None
+                matches.append(sub)
+        return matches
 
     def _needs_renewal(self, subscription: dict[str, Any]) -> bool:
         """Check if a subscription needs renewal (close to expiration)."""

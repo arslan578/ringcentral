@@ -579,3 +579,89 @@ def test_inbound_message_with_missing_optional_fields(app, client: TestClient):
     assert payload.conversation_id is None
     assert payload.read_status is None
     assert payload.delivery_error_code is None
+
+
+# ─────────────────────────────────────────────────────────────────
+# Duplicate notification (multi-worker simulation)
+# ─────────────────────────────────────────────────────────────────
+
+def test_same_notification_sent_twice_only_forwards_once(app, client: TestClient):
+    """
+    Simulates the 2-worker duplicate bug: the SAME RC notification arrives
+    twice (same message IDs). The idempotency cache must ensure each message
+    is forwarded to Zapier only ONCE — not doubled.
+    """
+    mock_forwarder = _make_mock_forwarder()
+    cache = IdempotencyCache(maxsize=100, ttl=60)
+    _setup_app_state(
+        app,
+        messages=[RC_FULL_INBOUND_MESSAGE, RC_FULL_OUTBOUND_MESSAGE],
+        forwarder=mock_forwarder,
+        cache=cache,
+    )
+
+    # First notification — should forward both inbound + outbound = 2 calls
+    r1 = client.post(
+        "/api/v1/rc/webhook",
+        json=RC_NOTIFICATION_PAYLOAD,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+    assert r1.status_code == 200
+    body1 = r1.json()
+    forwarded_1 = [r for r in body1["results"] if r["status"] == "forwarded"]
+    assert len(forwarded_1) == 2  # inbound + outbound
+
+    # Second IDENTICAL notification — same message IDs
+    r2 = client.post(
+        "/api/v1/rc/webhook",
+        json=RC_NOTIFICATION_PAYLOAD,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+    assert r2.status_code == 200
+    body2 = r2.json()
+    duplicates = [r for r in body2["results"] if r["status"] == "duplicate"]
+    forwarded_2 = [r for r in body2["results"] if r["status"] == "forwarded"]
+    assert len(duplicates) == 2   # both suppressed
+    assert len(forwarded_2) == 0  # nothing new sent
+
+    # Total: forwarder called exactly 2 times (first notification only)
+    assert mock_forwarder.send.call_count == 2
+
+
+def test_payload_has_no_raw_rc_payload_field(app, client: TestClient):
+    """
+    Zapier payload must be 100% flat — no raw_rc_payload blob.
+    All data is in individual top-level fields.
+    """
+    mock_forwarder = _make_mock_forwarder()
+    _setup_app_state(app, messages=[RC_FULL_INBOUND_MESSAGE], forwarder=mock_forwarder)
+
+    client.post(
+        "/api/v1/rc/webhook",
+        json=RC_NOTIFICATION_PAYLOAD,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+
+    payload = mock_forwarder.send.call_args[0][0]
+    payload_dict = payload.model_dump(mode="json")
+
+    # raw_rc_payload must NOT be present
+    assert "raw_rc_payload" not in payload_dict
+
+    # All important fields must be flat top-level keys
+    required_flat_fields = [
+        "source", "event_type", "message_id", "message_type", "direction",
+        "from_number", "to_number", "subject", "body",
+        "timestamp_utc", "received_at_utc",
+        "account_id", "extension_id", "conversation_id",
+        "read_status", "message_status", "priority", "availability",
+        "attachment_count", "message_uri", "rc_event_type", "rc_event_uuid",
+    ]
+    for field in required_flat_fields:
+        assert field in payload_dict, f"Missing flat field: {field}"
+
+    # Verify no nested dicts or lists in the payload (except None values)
+    for key, value in payload_dict.items():
+        assert not isinstance(value, (dict, list)), (
+            f"Field '{key}' is nested ({type(value).__name__}), not flat!"
+        )
