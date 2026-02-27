@@ -82,6 +82,8 @@ def _log_zapier_payload(payload: dict, message_id: str) -> None:
         f"  to_number           : {payload.get('to_number')}",
         f"  to_name             : {payload.get('to_name')}",
         f"  to_location         : {payload.get('to_location')}",
+        f"  all_to_numbers      : {payload.get('all_to_numbers')}",
+        f"  all_to_names        : {payload.get('all_to_names')}",
         sep,
         f"  subject             : {payload.get('subject', '')!r}",
         f"  body                : {payload.get('body', '')!r}",

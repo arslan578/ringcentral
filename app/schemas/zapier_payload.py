@@ -41,9 +41,13 @@ class ZapierPayload(BaseModel):
     from_location: Optional[str] = Field(None, description="Sender location (if available)")
 
     # ── Recipient info (flat) ──────────────────────────────────────
-    to_number: str = Field(description="Receiving E.164 phone number")
-    to_name: Optional[str] = Field(None, description="Recipient name (if available)")
-    to_location: Optional[str] = Field(None, description="Recipient location (if available)")
+    to_number: str = Field(description="Primary receiving E.164 phone number")
+    to_name: Optional[str] = Field(None, description="Primary recipient name (if available)")
+    to_location: Optional[str] = Field(None, description="Primary recipient location (if available)")
+
+    # ── All recipients (for group SMS / department queues) ────────
+    all_to_numbers: Optional[str] = Field(None, description="All recipient phone numbers, comma-separated")
+    all_to_names: Optional[str] = Field(None, description="All recipient names, comma-separated")
 
     # ── Content ───────────────────────────────────────────────────
     subject: str = Field(default="", description="SMS subject (same as body for SMS)")
@@ -135,15 +139,33 @@ class ZapierPayload(BaseModel):
         from_name = None
         from_location = None
         if message.from_:
-            from_name = message.from_.name
+            from_name = message.from_.name or None  # None if unknown external
             from_location = message.from_.location
 
         # -- Recipient info (flat) --
+        # RC can return MULTIPLE recipients in the to[] array
+        # (e.g. group SMS, department queues with multiple agents)
+        # We capture the primary (to[0]) AND all recipients.
         to_name = None
         to_location = None
+        all_to_numbers_list: list[str] = []
+        all_to_names_list: list[str] = []
+
         if message.to and len(message.to) > 0:
+            # Primary recipient
             to_name = message.to[0].name
             to_location = message.to[0].location
+            # Build full lists across ALL recipients
+            for recipient in message.to:
+                num = recipient.phone_number
+                name = recipient.name
+                if num:
+                    all_to_numbers_list.append(num)
+                if name:
+                    all_to_names_list.append(name)
+
+        all_to_numbers = ", ".join(all_to_numbers_list) if all_to_numbers_list else None
+        all_to_names = ", ".join(all_to_names_list) if all_to_names_list else None
 
         # -- Conversation ID --
         conv_id = None
@@ -163,6 +185,8 @@ class ZapierPayload(BaseModel):
             to_number=message.to_number,
             to_name=to_name,
             to_location=to_location,
+            all_to_numbers=all_to_numbers,
+            all_to_names=all_to_names,
             subject=message.subject or "",
             body=message.body,
             timestamp_utc=timestamp_utc,
