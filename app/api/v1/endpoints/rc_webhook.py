@@ -25,7 +25,6 @@ IMPORTANT:
 """
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any
 
@@ -67,9 +66,6 @@ def _log_zapier_payload(payload: dict, message_id: str) -> None:
     header = f" ZAPIER PAYLOAD -- {event_type.upper()} "
     header_line = f"{header:-^{_SEP_WIDTH}}"
 
-    raw_str = payload.get("raw_rc_payload", "{}")
-    raw_len = len(raw_str) if isinstance(raw_str, str) else len(json.dumps(raw_str))
-
     lines = [
         "",
         header_line,
@@ -110,7 +106,6 @@ def _log_zapier_payload(payload: dict, message_id: str) -> None:
         f"  message_uri         : {payload.get('message_uri')}",
         f"  rc_event_type       : {payload.get('rc_event_type')}",
         f"  rc_event_uuid       : {payload.get('rc_event_uuid')}",
-        f"  raw_rc_payload      : ({raw_len} chars JSON string)",
         sep,
         "",
     ]

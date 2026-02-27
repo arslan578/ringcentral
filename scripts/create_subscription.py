@@ -169,7 +169,8 @@ def create_subscription() -> bool:
             "transportType": "WebHook",
             "address": WEBHOOK_DELIVERY_URL,
             "verificationToken": RC_WEBHOOK_VERIFICATION_TOKEN,
-        }
+        },
+        "expiresIn": 604800,  # 7 days (in seconds) — previously missing, causing 15-min default expiry!
     }
 
     print(f"\nRequest JSON:\n{json.dumps(subscription_body, indent=2)}\n")

@@ -51,6 +51,14 @@ class Settings(BaseSettings):
         ...,
         description="RingCentral JWT token for server-to-server auth.",
     )
+    rc_webhook_delivery_url: str = Field(
+        default="",
+        description=(
+            "Public URL where RC should deliver webhook notifications. "
+            "e.g. https://your-app.ondigitalocean.app/api/v1/rc/webhook  "
+            "If empty, auto-subscription is disabled."
+        ),
+    )
 
     # ── Zapier ─────────────────────────────────────────────────────
     zapier_webhook_url: str = Field(

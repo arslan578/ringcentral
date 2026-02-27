@@ -192,7 +192,7 @@ def test_inbound_sms_payload_has_all_required_fields(app, client: TestClient):
       ✓ Conversation/thread ID                  → conversation_id
       ✓ Delivery status                         → message_status
       ✓ Message direction flag                  → direction
-      ✓ All available metadata                  → raw_rc_payload
+      ✓ All available metadata                  → flat top-level fields
     """
     mock_forwarder = _make_mock_forwarder(status_code=200)
     _setup_app_state(app, messages=[RC_FULL_INBOUND_MESSAGE], forwarder=mock_forwarder)
@@ -267,12 +267,8 @@ def test_inbound_sms_payload_has_all_required_fields(app, client: TestClient):
     assert zapier_payload.rc_event_uuid == "47954648896411110707"
     assert "/message-store" in zapier_payload.rc_event_type
 
-    # Full raw message payload is now a JSON string (flat, not nested)
-    assert isinstance(zapier_payload.raw_rc_payload, str)
-    import json
-    raw_parsed = json.loads(zapier_payload.raw_rc_payload)
-    assert raw_parsed["subject"] == "Please remove me from your list"
-    assert raw_parsed["from"]["phoneNumber"] == "+15550001111"
+    # No raw_rc_payload — all data is in flat top-level fields
+    assert not hasattr(zapier_payload, "raw_rc_payload") or "raw_rc_payload" not in zapier_payload.model_fields
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -348,8 +344,6 @@ def test_outbound_sms_payload_has_correct_fields(app, client: TestClient):
     assert payload.message_type == "SMS"
     assert payload.message_status == "Sent"
     assert payload.read_status == "Read"
-    # raw_rc_payload is now a JSON string
-    assert isinstance(payload.raw_rc_payload, str)
 
 
 # ─────────────────────────────────────────────────────────────────

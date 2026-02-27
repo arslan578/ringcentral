@@ -58,7 +58,6 @@ Every SMS forwarded to Zapier includes these **flat, individually-mappable** fie
 | `message_uri` | RC API URI for this message |
 | `rc_event_type` | RC event URI path |
 | `rc_event_uuid` | RC notification UUID |
-| `raw_rc_payload` | Complete original RC message (JSON string) |
 
 ## Quick Start
 
@@ -80,6 +79,7 @@ RC_CLIENT_ID=your_rc_client_id
 RC_CLIENT_SECRET=your_rc_client_secret
 RC_JWT_TOKEN=your_rc_jwt_token
 RC_SERVER_URL=https://platform.ringcentral.com
+RC_WEBHOOK_DELIVERY_URL=https://your-app.ondigitalocean.app/api/v1/rc/webhook
 ZAPIER_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/...
 APP_ENV=development
 LOG_LEVEL=INFO
@@ -138,4 +138,5 @@ scripts/                   # Utility scripts (auth testing, subscription creatio
 - **Idempotency** - TTL-based in-memory cache prevents duplicate forwarding
 - **JWT authentication** - Server-to-server auth with automatic token refresh
 - **Structured logging** - JSON file logs + human-readable console output
+- **Auto subscription management** - Creates and auto-renews RC webhook subscription (no manual scripts needed)
 - **Docker ready** - Multi-stage Dockerfile with health checks

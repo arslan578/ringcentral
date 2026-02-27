@@ -27,6 +27,7 @@ from app.config import get_settings
 from app.core.idempotency import IdempotencyCache
 from app.core.logging import setup_logging
 from app.services.rc_api_client import RCApiClient
+from app.services.rc_subscription_manager import RCSubscriptionManager
 from app.services.zapier_forwarder import ZapierForwarder
 
 logger = logging.getLogger(__name__)
@@ -76,12 +77,46 @@ async def lifespan(app: FastAPI):
         http_client=http_client,
     )
 
+    # ── Subscription auto-management ────────────────────────────
+    sub_manager: RCSubscriptionManager | None = None
+    if settings.rc_webhook_delivery_url:
+        sub_manager = RCSubscriptionManager(
+            rc_api=app.state.rc_api_client,
+            delivery_url=settings.rc_webhook_delivery_url,
+            verification_token=settings.rc_webhook_verification_token,
+        )
+        app.state.subscription_manager = sub_manager
+
+        # Create / renew subscription now (at startup)
+        try:
+            await sub_manager.ensure_subscription()
+        except Exception as exc:
+            logger.error(
+                "Initial subscription setup failed -- will retry in background",
+                extra={"event": "subscription_init_error", "error": str(exc)},
+            )
+
+        # Start background renewal loop
+        sub_manager.start_background_renewal()
+        logger.info(
+            "Subscription auto-renewal loop started",
+            extra={"event": "subscription_renewal_started"},
+        )
+    else:
+        app.state.subscription_manager = None
+        logger.warning(
+            "RC_WEBHOOK_DELIVERY_URL not set -- auto-subscription disabled. "
+            "You must manage the RC webhook subscription manually.",
+            extra={"event": "subscription_auto_disabled"},
+        )
+
     logger.info(
-        "Startup complete — ready to receive RC webhooks",
+        "Startup complete -- ready to receive RC webhooks",
         extra={
             "zapier_url": settings.zapier_webhook_url,
             "max_retries": settings.zapier_max_retries,
             "rc_server_url": settings.rc_server_url,
+            "auto_subscription": bool(settings.rc_webhook_delivery_url),
         },
     )
 
@@ -89,6 +124,8 @@ async def lifespan(app: FastAPI):
 
     # ── Shutdown ────────────────────────────────────────────────────
     logger.info("RC SMS Webhook service shutting down")
+    if sub_manager:
+        sub_manager.stop_background_renewal()
     await http_client.aclose()
     logger.info("HTTP client closed. Shutdown complete.")
 

@@ -31,7 +31,6 @@ def _sample_payload() -> ZapierPayload:
         body="Please remove me",
         timestamp_utc="2026-02-25T00:59:50+00:00",
         received_at_utc="2026-02-25T01:00:00+00:00",
-        raw_rc_payload='{"test": true}',
     )
 
 

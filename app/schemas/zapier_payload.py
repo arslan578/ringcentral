@@ -7,12 +7,10 @@ Design goals:
   - ALL fields are flat, top-level strings/numbers so Zapier can display
     and map each one individually in the Zap editor.
   - No nested objects — Zapier cannot easily parse nested JSON.
-  - raw_rc_payload is a JSON *string* (not a dict) for reference only.
   - Handles BOTH inbound and outbound SMS messages.
 """
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -84,12 +82,6 @@ class ZapierPayload(BaseModel):
     rc_event_type: Optional[str] = Field(None, description="RC event URI path")
     rc_event_uuid: Optional[str] = Field(None, description="RC notification UUID")
 
-    # ── Full raw message as a flat JSON string (for reference) ────
-    raw_rc_payload: str = Field(
-        default="{}",
-        description="Complete original RC message as a JSON string"
-    )
-
     @classmethod
     def from_rc_message(
         cls,
@@ -160,9 +152,6 @@ class ZapierPayload(BaseModel):
         elif message.conversation and message.conversation.id:
             conv_id = str(message.conversation.id)
 
-        # -- Raw payload as a flat JSON string --
-        raw_json_str = json.dumps(raw_message, default=str)
-
         return cls(
             event_type=event_type,
             message_id=str(message.id) if message.id else "unknown",
@@ -193,5 +182,4 @@ class ZapierPayload(BaseModel):
             message_uri=message.uri,
             rc_event_type=rc_event_type,
             rc_event_uuid=rc_event_uuid,
-            raw_rc_payload=raw_json_str,
         )
