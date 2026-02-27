@@ -59,3 +59,13 @@ Developer must transmit all available metadata fields exposed by RC’s SMS obje
 - Outbound SMS routing.
 - UI modifications.
 - Ongoing monitoring beyond initial deployment unless separately contracted.
+
+client's message:
+you have to understand,
+I need ALL incoming sms going to ALL of my users/phonenumbers
+and i need ALL outbound sms from ALL of my users/phonenumbers
+ 
+Company wide
+ 
+not just your number
+ 
