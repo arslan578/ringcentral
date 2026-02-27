@@ -42,3 +42,6 @@ Thumbs.db
 .coverage
 htmlcov/
 coverage.xml
+
+# Project requirements (private)
+zprojectrequirements.txt

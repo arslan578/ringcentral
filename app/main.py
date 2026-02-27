@@ -140,6 +140,38 @@ def create_app() -> FastAPI:
     # ── Routers ─────────────────────────────────────────────────────
     app.include_router(api_v1_router, prefix="/api/v1")
 
+    # ── Root route — endpoint directory for new users ─────────────
+    @app.get("/", tags=["Root"], summary="Service Info & Endpoint Directory")
+    async def root():
+        return {
+            "service": "RC SMS Webhook Integration",
+            "version": "1.0.0",
+            "description": (
+                "Routes RingCentral SMS messages (inbound + outbound) "
+                "to a Zapier webhook with full metadata."
+            ),
+            "endpoints": {
+                "GET  /": "This page - service info and endpoint directory",
+                "GET  /api/v1/health": (
+                    "Health check - returns service status, environment, "
+                    "and cache info. Used by Docker and uptime monitors."
+                ),
+                "GET  /api/v1/rc/webhook?validationToken=<token>": (
+                    "RC validation challenge - RingCentral sends this when "
+                    "registering a webhook subscription. Echoes the token back."
+                ),
+                "POST /api/v1/rc/webhook": (
+                    "Main receiver - accepts RC SMS notifications, fetches "
+                    "full message content from RC API, and forwards the "
+                    "enriched payload (from_number, to_number, body, timestamps, "
+                    "account/extension IDs, conversation ID, delivery status, etc.) "
+                    "to the configured Zapier webhook URL."
+                ),
+                "GET  /docs": "Swagger UI - interactive API docs (development mode only)",
+                "GET  /redoc": "ReDoc - alternative API docs (development mode only)",
+            }
+        }
+
     return app
 
 

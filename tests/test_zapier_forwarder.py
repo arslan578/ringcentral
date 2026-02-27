@@ -27,10 +27,11 @@ def _sample_payload() -> ZapierPayload:
         direction="Inbound",
         from_number="+15550001111",
         to_number="+15559990000",
+        subject="Please remove me",
         body="Please remove me",
         timestamp_utc="2026-02-25T00:59:50+00:00",
         received_at_utc="2026-02-25T01:00:00+00:00",
-        raw_rc_payload={"test": True},
+        raw_rc_payload='{"test": true}',
     )
 
 

@@ -210,18 +210,26 @@ def test_inbound_sms_payload_has_all_required_fields(app, client: TestClient):
     # ── SOW Required Fields ──────────────────────────────────────
     # Inbound phone number (sender)
     assert zapier_payload.from_number == "+15550001111"
+    assert zapier_payload.from_name == "John Doe"
+    assert zapier_payload.from_location == "Irvine, CA"
 
     # Phone number of the RC user receiving the SMS
     assert zapier_payload.to_number == "+15559990000"
+    assert zapier_payload.to_name == "RC User"
+    assert zapier_payload.to_location == "New York, NY"
 
     # SMS message body/content
     assert zapier_payload.body == "Please remove me from your list"
+    assert zapier_payload.subject == "Please remove me from your list"
 
-    # Message ID
+    # Message ID and type
     assert zapier_payload.message_id == "3610703867026"
+    assert zapier_payload.message_type == "SMS"
 
     # Timestamp (UTC)
     assert "2026-02-26" in zapier_payload.timestamp_utc
+    assert zapier_payload.last_modified_utc is not None
+    assert zapier_payload.sms_delivery_time_utc is not None
     assert zapier_payload.received_at_utc  # not empty
 
     # Account/user ID
@@ -251,14 +259,20 @@ def test_inbound_sms_payload_has_all_required_fields(app, client: TestClient):
     assert zapier_payload.priority == "Normal"
     assert zapier_payload.availability == "Alive"
 
+    # Message URI
+    assert zapier_payload.message_uri is not None
+    assert "message-store" in zapier_payload.message_uri
+
     # RC event metadata
     assert zapier_payload.rc_event_uuid == "47954648896411110707"
     assert "/message-store" in zapier_payload.rc_event_type
 
-    # Full raw message payload (all available metadata)
-    assert zapier_payload.raw_rc_payload == RC_FULL_INBOUND_MESSAGE
-    assert zapier_payload.raw_rc_payload["subject"] == "Please remove me from your list"
-    assert zapier_payload.raw_rc_payload["from"]["phoneNumber"] == "+15550001111"
+    # Full raw message payload is now a JSON string (flat, not nested)
+    assert isinstance(zapier_payload.raw_rc_payload, str)
+    import json
+    raw_parsed = json.loads(zapier_payload.raw_rc_payload)
+    assert raw_parsed["subject"] == "Please remove me from your list"
+    assert raw_parsed["from"]["phoneNumber"] == "+15550001111"
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -325,12 +339,17 @@ def test_outbound_sms_payload_has_correct_fields(app, client: TestClient):
     assert payload.direction == "Outbound"
     assert payload.event_type == "outbound_sms"
     assert payload.from_number == "+15559990000"  # RC user sending
+    assert payload.from_name == "RC User"
     assert payload.to_number == "+15550001111"     # external recipient
+    assert payload.to_name == "John Doe"
     assert payload.body == "Hi there, how can we help you?"
+    assert payload.subject == "Hi there, how can we help you?"
     assert payload.message_id == "3610703807026"
+    assert payload.message_type == "SMS"
     assert payload.message_status == "Sent"
     assert payload.read_status == "Read"
-    assert payload.raw_rc_payload == RC_FULL_OUTBOUND_MESSAGE
+    # raw_rc_payload is now a JSON string
+    assert isinstance(payload.raw_rc_payload, str)
 
 
 # ─────────────────────────────────────────────────────────────────

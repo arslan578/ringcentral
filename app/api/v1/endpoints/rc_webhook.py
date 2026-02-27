@@ -58,6 +58,7 @@ def _log_zapier_payload(payload: dict, message_id: str) -> None:
     """
     Print the exact JSON payload being sent to Zapier in a clean,
     readable format directly to the terminal.
+    All fields are flat — exactly what Zapier receives.
     """
     direction = payload.get("direction", "Unknown")
     event_type = payload.get("event_type", "sms")
@@ -66,36 +67,50 @@ def _log_zapier_payload(payload: dict, message_id: str) -> None:
     header = f" ZAPIER PAYLOAD -- {event_type.upper()} "
     header_line = f"{header:-^{_SEP_WIDTH}}"
 
+    raw_str = payload.get("raw_rc_payload", "{}")
+    raw_len = len(raw_str) if isinstance(raw_str, str) else len(json.dumps(raw_str))
+
     lines = [
         "",
         header_line,
-        f"  source           : {payload.get('source')}",
-        f"  event_type       : {event_type}",
-        f"  message_id       : {payload.get('message_id')}",
-        f"  direction        : {direction}",
+        f"  source              : {payload.get('source')}",
+        f"  event_type          : {event_type}",
+        f"  message_id          : {payload.get('message_id')}",
+        f"  message_type        : {payload.get('message_type')}",
+        f"  direction           : {direction}",
         sep,
-        f"  from_number      : {payload.get('from_number')}",
-        f"  to_number        : {payload.get('to_number')}",
-        f"  body             : {payload.get('body', '')!r}",
+        f"  from_number         : {payload.get('from_number')}",
+        f"  from_name           : {payload.get('from_name')}",
+        f"  from_location       : {payload.get('from_location')}",
         sep,
-        f"  timestamp_utc    : {payload.get('timestamp_utc')}",
-        f"  received_at_utc  : {payload.get('received_at_utc')}",
+        f"  to_number           : {payload.get('to_number')}",
+        f"  to_name             : {payload.get('to_name')}",
+        f"  to_location         : {payload.get('to_location')}",
         sep,
-        f"  account_id       : {payload.get('account_id')}",
-        f"  extension_id     : {payload.get('extension_id')}",
-        f"  subscription_id  : {payload.get('subscription_id')}",
-        f"  conversation_id  : {payload.get('conversation_id')}",
+        f"  subject             : {payload.get('subject', '')!r}",
+        f"  body                : {payload.get('body', '')!r}",
         sep,
-        f"  read_status      : {payload.get('read_status')}",
-        f"  message_status   : {payload.get('message_status')}",
-        f"  delivery_error   : {payload.get('delivery_error_code')}",
-        f"  priority         : {payload.get('priority')}",
-        f"  availability     : {payload.get('availability')}",
-        f"  attachment_count : {payload.get('attachment_count')}",
+        f"  timestamp_utc       : {payload.get('timestamp_utc')}",
+        f"  last_modified_utc   : {payload.get('last_modified_utc')}",
+        f"  sms_delivery_time   : {payload.get('sms_delivery_time_utc')}",
+        f"  received_at_utc     : {payload.get('received_at_utc')}",
         sep,
-        f"  rc_event_type    : {payload.get('rc_event_type')}",
-        f"  rc_event_uuid    : {payload.get('rc_event_uuid')}",
-        f"  raw_rc_payload   : ({len(json.dumps(payload.get('raw_rc_payload', {})))} bytes)",
+        f"  account_id          : {payload.get('account_id')}",
+        f"  extension_id        : {payload.get('extension_id')}",
+        f"  subscription_id     : {payload.get('subscription_id')}",
+        f"  conversation_id     : {payload.get('conversation_id')}",
+        sep,
+        f"  read_status         : {payload.get('read_status')}",
+        f"  message_status      : {payload.get('message_status')}",
+        f"  delivery_error_code : {payload.get('delivery_error_code')}",
+        f"  priority            : {payload.get('priority')}",
+        f"  availability        : {payload.get('availability')}",
+        f"  attachment_count    : {payload.get('attachment_count')}",
+        sep,
+        f"  message_uri         : {payload.get('message_uri')}",
+        f"  rc_event_type       : {payload.get('rc_event_type')}",
+        f"  rc_event_uuid       : {payload.get('rc_event_uuid')}",
+        f"  raw_rc_payload      : ({raw_len} chars JSON string)",
         sep,
         "",
     ]
