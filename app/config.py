@@ -69,17 +69,18 @@ class Settings(BaseSettings):
     )
 
     # ── Zapier ───────────────────────────────────────────────
+    # Legacy single URL — optional now that inbound/outbound are used
     zapier_webhook_url: str = Field(
-        ...,
-        description="Default Zapier catch-hook URL.",
+        default="",
+        description="Legacy default URL (optional when inbound/outbound are configured).",
     )
     zapier_inbound_webhook_url: str = Field(
         ...,
-        description="Zapier URL for INBOUND SMS. Required — no fallback.",
+        description="Zapier URL for INBOUND SMS. Required.",
     )
     zapier_outbound_webhook_url: str = Field(
         ...,
-        description="Zapier URL for OUTBOUND SMS. Required — no fallback.",
+        description="Zapier URL for OUTBOUND SMS. Required.",
     )
 
     # ── Retry / Reliability ────────────────────────────────────────
@@ -99,12 +100,6 @@ class Settings(BaseSettings):
             raise ValueError(f"log_level must be one of {allowed}")
         return upper
 
-    @field_validator("zapier_webhook_url")
-    @classmethod
-    def validate_https(cls, v: str) -> str:
-        if not v.startswith("https://"):
-            raise ValueError("ZAPIER_WEBHOOK_URL must use HTTPS.")
-        return v
 
     @property
     def is_development(self) -> bool:
