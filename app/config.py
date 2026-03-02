@@ -68,10 +68,18 @@ class Settings(BaseSettings):
         ),
     )
 
-    # ── Zapier ─────────────────────────────────────────────────────
+    # ── Zapier ───────────────────────────────────────────────
     zapier_webhook_url: str = Field(
         ...,
-        description="Full Zapier catch-hook HTTPS URL.",
+        description="Default Zapier catch-hook URL.",
+    )
+    zapier_inbound_webhook_url: str = Field(
+        ...,
+        description="Zapier URL for INBOUND SMS. Required — no fallback.",
+    )
+    zapier_outbound_webhook_url: str = Field(
+        ...,
+        description="Zapier URL for OUTBOUND SMS. Required — no fallback.",
     )
 
     # ── Retry / Reliability ────────────────────────────────────────

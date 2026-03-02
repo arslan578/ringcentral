@@ -57,13 +57,20 @@ class ZapierForwarder:
         self._max_retries = max_retries
         self._base_delay = base_delay
 
-    async def send(self, payload: ZapierPayload) -> ForwardResult:
+    async def send(
+        self,
+        payload: ZapierPayload,
+        webhook_url: str | None = None,
+    ) -> ForwardResult:
         """
         POST the payload to Zapier. Retries on HTTP errors (4xx/5xx) or
         network exceptions using exponential backoff.
 
         Args:
-            payload: The fully built ZapierPayload to transmit.
+            payload:     The fully built ZapierPayload to transmit.
+            webhook_url: Optional URL override. If provided, this URL is used
+                         instead of the default set at construction time.
+                         Use this to route inbound/outbound to different Zaps.
 
         Returns:
             ForwardResult on success.
@@ -71,6 +78,7 @@ class ZapierForwarder:
         Raises:
             ZapierForwardError: if all retry attempts fail.
         """
+        target_url = webhook_url or self._webhook_url
         message_id = payload.message_id
         last_status_code: int | None = None
         last_exception: Exception | None = None
@@ -90,10 +98,11 @@ class ZapierForwarder:
                 )
 
                 response = await self._client.post(
-                    self._webhook_url,
+                    target_url,
                     json=payload.model_dump(mode="json"),
                     timeout=15.0,
                 )
+
                 last_status_code = response.status_code
 
                 if response.is_success:

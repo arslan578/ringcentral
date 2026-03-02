@@ -382,9 +382,19 @@ async def rc_webhook_receiver(
         payload_dict = zapier_payload.model_dump(mode="json")
         _log_zapier_payload(payload_dict, message_id)
 
-        # Step 6c: Forward to Zapier
+        # Step 6c: Route to the correct Zapier URL based on direction
+        #   Inbound  → ZAPIER_INBOUND_WEBHOOK_URL
+        #   Outbound → ZAPIER_OUTBOUND_WEBHOOK_URL
+        is_inbound = (message.direction or "").lower() == "inbound"
+        target_zapier_url = (
+            settings.zapier_inbound_webhook_url
+            if is_inbound
+            else settings.zapier_outbound_webhook_url
+        )
+
         try:
-            result = await forwarder.send(zapier_payload)
+            result = await forwarder.send(zapier_payload, webhook_url=target_zapier_url)
+
             # Step 6d: Mark message as seen
             if message_id:
                 idempotency.mark_seen(message_id)
