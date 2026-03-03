@@ -262,6 +262,10 @@ Logs are written to `logs/app.log` (daily rotation, 7 days kept) and stdout.
 | `ZAPIER_RETRY_BASE_DELAY_SECONDS` | No | `1.0` | Backoff base (doubles each retry) |
 | `IDEMPOTENCY_CACHE_MAX_SIZE` | No | `10000` | Max message IDs tracked for dedup |
 | `IDEMPOTENCY_CACHE_TTL_SECONDS` | No | `86400` | How long (seconds) to remember a message ID |
+| `REDACT_SENSITIVE_DATA` | No | `false` | Master on/off switch for sensitive data redaction |
+| `REDACT_KEYWORDS` | No | `""` | Comma-separated lender names to mask (e.g. `Covered Care,Westlake`) |
+| `REDACT_PHONE_NUMBERS` | No | `true` | Also mask phone numbers in SMS body (when redaction is on) |
+| `REDACT_FINANCIAL_DATA` | No | `true` | Intelligent detection of account numbers, SSN, dollars, lender names, emails |
 
 ---
 
@@ -273,3 +277,53 @@ Logs are written to `logs/app.log` (daily rotation, 7 days kept) and stdout.
 - ✅ Timing-attack-safe token comparison (`hmac.compare_digest`)
 - ✅ Non-root Docker user
 - ✅ `/docs` disabled in production
+- ✅ Sensitive data redaction available for SMS content
+
+---
+
+## 13. Sensitive Data Redaction
+
+If your team sends SMS messages containing lender names, financial account details, or phone numbers that should **not** appear in the CRM, enable redaction.
+
+### How to Enable
+
+Add these to your `.env`:
+
+```env
+REDACT_SENSITIVE_DATA=true
+REDACT_KEYWORDS=Covered Care,Westlake Portfolio Management
+REDACT_PHONE_NUMBERS=true
+REDACT_FINANCIAL_DATA=true
+```
+
+| Variable | What it does |
+|---|---|
+| `REDACT_SENSITIVE_DATA` | **Master switch.** Set to `true` to enable all redaction. |
+| `REDACT_KEYWORDS` | Comma-separated list of terms to **always** mask (e.g. lender names). Case-insensitive. |
+| `REDACT_PHONE_NUMBERS` | Masks all US phone numbers in any format. |
+| `REDACT_FINANCIAL_DATA` | **Intelligent broad detection** of financial entities (see below). |
+
+### What REDACT_FINANCIAL_DATA Detects Automatically
+
+When enabled, the system intelligently scans every SMS body and masks:
+
+- **Lender/company names** after trigger phrases like "managed by", "financed through", "account with", "serviced by"
+- **Financial company names** by suffix: Portfolio Management, Financial Services, Auto Finance, Lending LLC, etc.
+- **Account/loan/reference/policy numbers**: account #12345, loan number 98765, ref: ABC-123
+- **Social Security Numbers**: 123-45-6789
+- **Tax IDs / EIN**: 12-3456789
+- **Dollar amounts**: $1,234.56, $500, $12.34
+- **Email addresses**: support@lender.com
+
+### Before / After Example
+
+**Before** (what the agent actually sent):
+> your account with **Covered Care** (managed by **Westlake Portfolio Management**) is past due. Balance: **$1,234.56**. Contact them at **(888) 589-5444**.
+
+**After** (what the CRM receives):
+> your account with **\*\*\*** (managed by **\*\*\***) is past due. Balance: **\*\*\***. Contact them at **\*\*\***.
+
+### Adding / Removing Keywords
+
+Just edit `REDACT_KEYWORDS` in `.env` and restart the server. No code changes needed.
+

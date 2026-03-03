@@ -43,6 +43,7 @@ from app.core.rc_validator import validate_verification_token
 from app.schemas.rc_message import RCMessage, RCWebhookEvent
 from app.schemas.zapier_payload import ZapierPayload
 from app.services.rc_api_client import RCApiClient
+from app.services.redaction import SensitiveDataRedactor
 from app.services.zapier_forwarder import ZapierForwarder
 
 logger = logging.getLogger(__name__)
@@ -134,6 +135,10 @@ def _get_rc_api_client(request: Request) -> RCApiClient:
     return request.app.state.rc_api_client
 
 
+def _get_redactor(request: Request) -> SensitiveDataRedactor:
+    return request.app.state.redactor
+
+
 @router.get(
     "/webhook",
     summary="RC Webhook Validation Challenge",
@@ -182,6 +187,7 @@ async def rc_webhook_receiver(
     forwarder: ZapierForwarder = Depends(_get_forwarder),
     idempotency: IdempotencyCache = Depends(_get_idempotency_cache),
     rc_api: RCApiClient = Depends(_get_rc_api_client),
+    redactor: SensitiveDataRedactor = Depends(_get_redactor),
 ) -> dict[str, Any]:
     """
     POST /api/v1/rc/webhook
@@ -377,6 +383,11 @@ async def rc_webhook_receiver(
             rc_event_type=event.event,
             rc_event_uuid=event.uuid,
         )
+
+        # Step 6b½: Redact sensitive data (lender names, phone numbers)
+        zapier_payload.body = redactor.redact(zapier_payload.body)
+        if hasattr(zapier_payload, 'subject') and zapier_payload.subject:
+            zapier_payload.subject = redactor.redact(zapier_payload.subject)
 
         # Print the exact Zapier payload to terminal
         payload_dict = zapier_payload.model_dump(mode="json")

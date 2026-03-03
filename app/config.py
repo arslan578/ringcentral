@@ -91,6 +91,39 @@ class Settings(BaseSettings):
     idempotency_cache_max_size: int = Field(default=10_000, ge=100)
     idempotency_cache_ttl_seconds: int = Field(default=86_400, ge=60)
 
+    # ── Sensitive Data Redaction ───────────────────────────────────
+    redact_sensitive_data: bool = Field(
+        default=False,
+        description=(
+            "Master switch for sensitive data redaction. "
+            "When enabled, configured keywords and phone numbers in SMS "
+            "body/subject are masked with '***' before forwarding to Zapier."
+        ),
+    )
+    redact_keywords: str = Field(
+        default="",
+        description=(
+            "Comma-separated list of sensitive terms to redact "
+            "(e.g. lender names: 'Covered Care,Westlake Portfolio Management'). "
+            "Case-insensitive matching."
+        ),
+    )
+    redact_phone_numbers: bool = Field(
+        default=True,
+        description=(
+            "When redaction is enabled, also mask phone numbers found "
+            "in SMS body text. Detects common US formats."
+        ),
+    )
+    redact_financial_data: bool = Field(
+        default=True,
+        description=(
+            "When redaction is enabled, intelligently detect and mask "
+            "financial data: account/loan/reference numbers, SSN/EIN, "
+            "dollar amounts, lender/company names in context, and emails."
+        ),
+    )
+
     @field_validator("log_level")
     @classmethod
     def validate_log_level(cls, v: str) -> str:

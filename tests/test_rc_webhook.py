@@ -30,6 +30,7 @@ from fastapi.testclient import TestClient
 
 from app.core.exceptions import ZapierForwardError
 from app.core.idempotency import IdempotencyCache
+from app.services.redaction import SensitiveDataRedactor
 from app.services.zapier_forwarder import ForwardResult, ZapierForwarder
 from tests.conftest import (
     RC_NOTIFICATION_PAYLOAD,
@@ -57,13 +58,14 @@ def _make_mock_forwarder(status_code: int = 200, raises=None) -> ZapierForwarder
     return forwarder
 
 
-def _setup_app_state(app, messages=None, forwarder=None, cache=None):
-    """Convenience: wire up mock forwarder, mock RC API client, and cache."""
+def _setup_app_state(app, messages=None, forwarder=None, cache=None, redactor=None):
+    """Convenience: wire up mock forwarder, mock RC API client, cache, and redactor."""
     app.state.zapier_forwarder = forwarder or _make_mock_forwarder(status_code=200)
     app.state.idempotency_cache = cache or IdempotencyCache(maxsize=100, ttl=60)
     app.state.rc_api_client = make_mock_rc_api_client(
         messages=messages if messages is not None else [RC_FULL_INBOUND_MESSAGE]
     )
+    app.state.redactor = redactor or SensitiveDataRedactor(enabled=False)
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -663,3 +665,83 @@ def test_payload_has_no_raw_rc_payload_field(app, client: TestClient):
         assert not isinstance(value, (dict, list)), (
             f"Field '{key}' is nested ({type(value).__name__}), not flat!"
         )
+
+
+# ─────────────────────────────────────────────────────────────────
+# POST — Sensitive Data Redaction
+# ─────────────────────────────────────────────────────────────────
+
+def test_redaction_masks_lender_names_in_body(app, client: TestClient):
+    """When redaction is enabled, lender names in the SMS body should be
+    replaced with '***' before forwarding to Zapier."""
+    lender_message = dict(RC_FULL_INBOUND_MESSAGE)
+    lender_message["id"] = 8888888
+    lender_message["subject"] = (
+        "your financing account with Covered Care "
+        "(managed by Westlake Portfolio Management) is past due. "
+        "Contact Covered Care at (888) 589-5444."
+    )
+
+    redactor = SensitiveDataRedactor(
+        enabled=True,
+        keywords=["Covered Care", "Westlake Portfolio Management"],
+        redact_phone_numbers=True,
+    )
+    mock_forwarder = _make_mock_forwarder()
+    _setup_app_state(
+        app,
+        messages=[lender_message],
+        forwarder=mock_forwarder,
+        redactor=redactor,
+    )
+
+    client.post(
+        "/api/v1/rc/webhook",
+        json=RC_NOTIFICATION_PAYLOAD,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+
+    assert mock_forwarder.send.call_count == 1
+    payload = mock_forwarder.send.call_args[0][0]
+
+    # Lender names should be masked
+    assert "Covered Care" not in payload.body
+    assert "Westlake Portfolio Management" not in payload.body
+    # Phone number should be masked
+    assert "589-5444" not in payload.body
+    # Replacement marker should be present
+    assert "***" in payload.body
+    # Non-sensitive text should remain
+    assert "past due" in payload.body
+
+
+def test_redaction_disabled_passes_body_unchanged(app, client: TestClient):
+    """When redaction is disabled, the SMS body passes to Zapier unchanged."""
+    lender_message = dict(RC_FULL_INBOUND_MESSAGE)
+    lender_message["id"] = 9999999
+    original_body = "Contact Covered Care at (888) 589-5444"
+    lender_message["subject"] = original_body
+
+    redactor = SensitiveDataRedactor(
+        enabled=False,
+        keywords=["Covered Care"],
+        redact_phone_numbers=True,
+    )
+    mock_forwarder = _make_mock_forwarder()
+    _setup_app_state(
+        app,
+        messages=[lender_message],
+        forwarder=mock_forwarder,
+        redactor=redactor,
+    )
+
+    client.post(
+        "/api/v1/rc/webhook",
+        json=RC_NOTIFICATION_PAYLOAD,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+
+    assert mock_forwarder.send.call_count == 1
+    payload = mock_forwarder.send.call_args[0][0]
+    # Body should be unchanged when redaction is disabled
+    assert payload.body == original_body

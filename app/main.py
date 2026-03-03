@@ -28,6 +28,7 @@ from app.core.idempotency import IdempotencyCache
 from app.core.logging import setup_logging
 from app.services.rc_api_client import RCApiClient
 from app.services.rc_subscription_manager import RCSubscriptionManager
+from app.services.redaction import SensitiveDataRedactor
 from app.services.zapier_forwarder import ZapierForwarder
 
 logger = logging.getLogger(__name__)
@@ -75,6 +76,19 @@ async def lifespan(app: FastAPI):
         client_secret=settings.rc_client_secret,
         jwt_token=settings.rc_jwt_token,
         http_client=http_client,
+    )
+
+    # Sensitive data redactor — masks lender names & phone numbers
+    keywords = [
+        kw.strip()
+        for kw in settings.redact_keywords.split(",")
+        if kw.strip()
+    ] if settings.redact_keywords else []
+    app.state.redactor = SensitiveDataRedactor(
+        enabled=settings.redact_sensitive_data,
+        keywords=keywords,
+        redact_phone_numbers=settings.redact_phone_numbers,
+        redact_financial_data=settings.redact_financial_data,
     )
 
     # ── Subscription auto-management ────────────────────────────

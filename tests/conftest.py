@@ -23,6 +23,10 @@ os.environ.setdefault("RC_JWT_TOKEN", "test-jwt-token")
 os.environ.setdefault("RC_SERVER_URL", "https://platform.ringcentral.com")
 os.environ.setdefault("RC_ACCOUNT_SCOPE", "company_wide")
 os.environ.setdefault("RC_WEBHOOK_DELIVERY_URL", "https://test-webhook.example.com/api/v1/rc/webhook")
+os.environ.setdefault("REDACT_SENSITIVE_DATA", "false")
+os.environ.setdefault("REDACT_KEYWORDS", "")
+os.environ.setdefault("REDACT_PHONE_NUMBERS", "true")
+os.environ.setdefault("REDACT_FINANCIAL_DATA", "true")
 
 # ── Now safe to import app modules ────────────────────────────────
 import pytest
@@ -32,6 +36,7 @@ from fastapi.testclient import TestClient
 from app.config import get_settings
 from app.main import create_app
 from app.services.rc_api_client import RCApiClient
+from app.services.redaction import SensitiveDataRedactor
 
 
 @pytest.fixture
