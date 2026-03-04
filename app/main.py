@@ -89,6 +89,8 @@ async def lifespan(app: FastAPI):
         keywords=keywords,
         redact_phone_numbers=settings.redact_phone_numbers,
         redact_financial_data=settings.redact_financial_data,
+        fuzzy_match=settings.redact_fuzzy_match,
+        fuzzy_threshold=settings.redact_fuzzy_threshold,
     )
 
     # ── Subscription auto-management ────────────────────────────

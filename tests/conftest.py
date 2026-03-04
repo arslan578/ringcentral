@@ -27,6 +27,8 @@ os.environ.setdefault("REDACT_SENSITIVE_DATA", "false")
 os.environ.setdefault("REDACT_KEYWORDS", "")
 os.environ.setdefault("REDACT_PHONE_NUMBERS", "true")
 os.environ.setdefault("REDACT_FINANCIAL_DATA", "true")
+os.environ.setdefault("REDACT_FUZZY_MATCH", "true")
+os.environ.setdefault("REDACT_FUZZY_THRESHOLD", "0.72")
 
 # ── Now safe to import app modules ────────────────────────────────
 import pytest

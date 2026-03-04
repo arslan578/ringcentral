@@ -123,6 +123,25 @@ class Settings(BaseSettings):
             "dollar amounts, lender/company names in context, and emails."
         ),
     )
+    redact_fuzzy_match: bool = Field(
+        default=True,
+        description=(
+            "When redaction is enabled, use fuzzy matching to catch "
+            "misspellings and AI transcription errors of keyword names. "
+            "e.g. 'covered core' matches 'Covered Care'."
+        ),
+    )
+    redact_fuzzy_threshold: float = Field(
+        default=0.72,
+        ge=0.5,
+        le=1.0,
+        description=(
+            "Similarity threshold for fuzzy matching (0.5-1.0). "
+            "Lower = more aggressive (more false positives). "
+            "Higher = stricter (may miss some misspellings). "
+            "Default 0.72 catches most AI transcription errors."
+        ),
+    )
 
     @field_validator("log_level")
     @classmethod
