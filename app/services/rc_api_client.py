@@ -313,7 +313,12 @@ class RCApiClient:
         """
         Fetch a single call log entry from the RC Call Log API.
 
-        GET /restapi/v1.0/account/{accountId}/call-log/{callId}?view=Detailed
+        GET /restapi/v1.0/account/~/call-log/{callId}?view=Detailed
+
+        We use `~` for account_id (= authenticated user's own account)
+        instead of the numeric ID from the event, because the telephony
+        events may arrive from a different sub-account ID, and `~` is
+        always valid.
 
         Returns the full call record including:
           - parties[]: from/to numbers, names, directions
@@ -324,13 +329,20 @@ class RCApiClient:
 
         Returns None if not found or on error.
 
+        Rate‐limit handling:
+          If RC returns 429, this method reads the Retry-After header,
+          waits the indicated duration (default 60s), and retries up to
+          3 times before giving up and returning None.
+
         Reference:
           https://developers.ringcentral.com/api-reference/Call-Log/readCompanyCallRecord
         """
         token = await self._ensure_token()
 
+        # Use '~' so the request goes against the authenticated account,
+        # regardless of which sub-account the telephony event originated from.
         url = (
-            f"{self._server_url}/restapi/v1.0/account/{account_id}"
+            f"{self._server_url}/restapi/v1.0/account/~"
             f"/call-log/{call_id}?view=Detailed"
         )
 
@@ -343,71 +355,114 @@ class RCApiClient:
             },
         )
 
-        try:
-            response = await self._http.get(
-                url,
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Accept": "application/json",
-                },
-                timeout=15.0,
-            )
+        max_429_retries = 3
 
-            if response.status_code == 404:
-                logger.warning(
-                    "RC call log entry not found",
+        for attempt in range(1, max_429_retries + 1):
+            try:
+                response = await self._http.get(
+                    url,
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Accept": "application/json",
+                    },
+                    timeout=15.0,
+                )
+
+                if response.status_code == 404:
+                    logger.warning(
+                        "RC call log entry not found",
+                        extra={
+                            "event": "rc_call_log_not_found",
+                            "call_id": call_id,
+                        },
+                    )
+                    return None
+
+                # ── Handle 429 Rate Limit ──────────────────────
+                if response.status_code == 429:
+                    # RC includes Retry-After header (seconds to wait)
+                    retry_after_str = response.headers.get("Retry-After", "")
+                    try:
+                        retry_after = int(retry_after_str)
+                    except (ValueError, TypeError):
+                        retry_after = 60  # default 60s if header missing
+
+                    # Cap at 120s to avoid excessively long waits
+                    retry_after = min(retry_after, 120)
+
+                    if attempt < max_429_retries:
+                        logger.warning(
+                            "RC API rate limited (429) — waiting %ds before retry (attempt %d/%d)",
+                            retry_after, attempt, max_429_retries,
+                            extra={
+                                "event": "rc_call_log_rate_limited",
+                                "call_id": call_id,
+                                "retry_after": retry_after,
+                                "attempt": attempt,
+                            },
+                        )
+                        await asyncio.sleep(retry_after)
+                        # Re-acquire token in case it expired during wait
+                        token = await self._ensure_token()
+                        continue
+                    else:
+                        logger.error(
+                            "RC API rate limited (429) — max retries exhausted",
+                            extra={
+                                "event": "rc_call_log_rate_limit_exhausted",
+                                "call_id": call_id,
+                                "attempts": max_429_retries,
+                            },
+                        )
+                        return None
+
+                if not response.is_success:
+                    logger.error(
+                        "RC API error fetching call log",
+                        extra={
+                            "event": "rc_call_log_api_error",
+                            "call_id": call_id,
+                            "status_code": response.status_code,
+                            "response_body": response.text[:500],
+                        },
+                    )
+                    return None
+
+                call_data = response.json()
+                logger.info(
+                    "RC call log entry fetched successfully",
                     extra={
-                        "event": "rc_call_log_not_found",
+                        "event": "rc_call_log_fetched",
                         "call_id": call_id,
+                        "duration": call_data.get("duration"),
+                        "has_notes": bool(call_data.get("notes")),
                     },
                 )
-                return None
+                return call_data
 
-            if not response.is_success:
+            except httpx.TimeoutException as exc:
                 logger.error(
-                    "RC API error fetching call log",
+                    "RC Call Log API request timed out",
                     extra={
-                        "event": "rc_call_log_api_error",
+                        "event": "rc_call_log_timeout",
                         "call_id": call_id,
-                        "status_code": response.status_code,
-                        "response_body": response.text[:500],
+                        "error": str(exc),
                     },
                 )
                 return None
 
-            call_data = response.json()
-            logger.info(
-                "RC call log entry fetched successfully",
-                extra={
-                    "event": "rc_call_log_fetched",
-                    "call_id": call_id,
-                    "duration": call_data.get("duration"),
-                    "has_notes": bool(call_data.get("notes")),
-                },
-            )
-            return call_data
+            except httpx.RequestError as exc:
+                logger.error(
+                    "RC Call Log API network error",
+                    extra={
+                        "event": "rc_call_log_network_error",
+                        "call_id": call_id,
+                        "error": str(exc),
+                    },
+                )
+                return None
 
-        except httpx.TimeoutException as exc:
-            logger.error(
-                "RC Call Log API request timed out",
-                extra={
-                    "event": "rc_call_log_timeout",
-                    "call_id": call_id,
-                    "error": str(exc),
-                },
-            )
-            return None
-
-        except httpx.RequestError as exc:
-            logger.error(
-                "RC Call Log API network error",
-                extra={
-                    "event": "rc_call_log_network_error",
-                    "call_id": call_id,
-                    "error": str(exc),
-                },
-            )
-            return None
+        return None
 
     async def get_messages_batch(
         self,

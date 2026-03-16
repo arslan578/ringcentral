@@ -1,0 +1,1330 @@
+Mar 16 16:18:28  
+Mar 16 16:18:28                   | event=zapier_payload_sending  message_id=3631229398027  direction=Inbound
+Mar 16 16:18:28  [16:18:28] INFO  | Sending payload to Zapier
+Mar 16 16:18:28                   | event=zapier_forward_attempt  message_id=3631229398027  attempt=1  max_retries=3  from_number=+18019136153  to_number=+18882350004
+Mar 16 16:18:28  [16:18:28] INFO  | Zapier webhook accepted payload
+Mar 16 16:18:28                   | event=zapier_forward_success  message_id=3631229398027  attempt=1  zapier_status_code=200
+Mar 16 16:18:33  [16:18:33] INFO  | Fetching call log entry from RC API
+Mar 16 16:18:33                   | event=rc_api_fetch_call_log  account_id=562216026
+Mar 16 16:18:33  [16:18:33] INFO  | Fetching call log entry from RC API
+Mar 16 16:18:33                   | event=rc_api_fetch_call_log  account_id=562216026
+Mar 16 16:18:34  [16:18:34] ERROR | RC API error fetching call log
+Mar 16 16:18:34                   | event=rc_call_log_api_error  status_code=429
+Mar 16 16:18:34  [16:18:34] WARN  | Call log fetch failed (attempt 2/3) — will retry
+Mar 16 16:18:34                   | event=call_summary_fetch_failed  attempt=2
+Mar 16 16:18:34  [16:18:34] INFO  | Waiting 60.0s before call log fetch (attempt 3/3)
+Mar 16 16:18:34                   | event=call_summary_waiting  attempt=3
+Mar 16 16:18:34  [16:18:34] ERROR | RC API error fetching call log
+Mar 16 16:18:34                   | event=rc_call_log_api_error  status_code=429
+Mar 16 16:18:34  [16:18:34] WARN  | Call log fetch failed (attempt 2/3) — will retry
+Mar 16 16:18:34                   | event=call_summary_fetch_failed  attempt=2
+Mar 16 16:18:34  [16:18:34] INFO  | Waiting 60.0s before call log fetch (attempt 3/3)
+Mar 16 16:18:34                   | event=call_summary_waiting  attempt=3
+Mar 16 16:18:41  [16:18:41] INFO  | RC webhook notification received
+Mar 16 16:18:41                   | event=rc_notification_received
+Mar 16 16:18:41  [16:18:41] INFO  | Telephony event received
+Mar 16 16:18:41                   | event=telephony_event_received
+Mar 16 16:18:41  [16:18:41] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:41                   | event=telephony_event_skipped
+Mar 16 16:18:41  [16:18:41] INFO  | RC webhook notification received
+Mar 16 16:18:41                   | event=rc_notification_received
+Mar 16 16:18:41  [16:18:41] INFO  | Telephony event received
+Mar 16 16:18:41                   | event=telephony_event_received
+Mar 16 16:18:41  [16:18:41] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:41                   | event=telephony_event_skipped
+Mar 16 16:18:42  [16:18:42] INFO  | RC webhook notification received
+Mar 16 16:18:42                   | event=rc_notification_received
+Mar 16 16:18:42  [16:18:42] INFO  | Telephony event received
+Mar 16 16:18:42                   | event=telephony_event_received
+Mar 16 16:18:42  [16:18:42] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:42                   | event=telephony_event_skipped
+Mar 16 16:18:47  [16:18:47] INFO  | RC webhook notification received
+Mar 16 16:18:47                   | event=rc_notification_received
+Mar 16 16:18:47  [16:18:47] INFO  | Telephony event received
+Mar 16 16:18:47                   | event=telephony_event_received
+Mar 16 16:18:47  [16:18:47] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:47                   | event=telephony_event_skipped
+Mar 16 16:18:47  [16:18:47] INFO  | RC webhook notification received
+Mar 16 16:18:47                   | event=rc_notification_received
+Mar 16 16:18:47  [16:18:47] INFO  | Telephony event received
+Mar 16 16:18:47                   | event=telephony_event_received
+Mar 16 16:18:47  [16:18:47] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:47                   | event=telephony_event_skipped
+Mar 16 16:18:50  [16:18:50] INFO  | Fetching call log entry from RC API
+Mar 16 16:18:50                   | event=rc_api_fetch_call_log  account_id=562216026
+Mar 16 16:18:50  [16:18:50] ERROR | RC API error fetching call log
+Mar 16 16:18:50                   | event=rc_call_log_api_error  status_code=429
+Mar 16 16:18:50  [16:18:50] WARN  | Call log fetch failed (attempt 3/3) — will retry
+Mar 16 16:18:50                   | event=call_summary_fetch_failed  attempt=3
+Mar 16 16:18:50  [16:18:50] WARN  | AI notes not available after 3 attempt(s) — using fallback
+Mar 16 16:18:50                   | event=call_summary_notes_unavailable
+Mar 16 16:18:50  [16:18:50] INFO  | Sending call summary to Logics:
+Mar 16 16:18:50  
+Mar 16 16:18:50                       --- CALL SUMMARY PAYLOAD ---                     
+Mar 16 16:18:50    subject             : RingCentral Call Summary By: Developer Developer
+Mar 16 16:18:50  ----------------------------------------------------------------------
+Mar 16 16:18:50    call_id             : s-a78602719f57az19cf76ec6eez23ece2b0000
+Mar 16 16:18:50    call_direction      : Inbound
+Mar 16 16:18:50    agent_name          : Developer Developer
+Mar 16 16:18:50    agent_number        : +19495708172
+Mar 16 16:18:50    caller_number       : 10014
+Mar 16 16:18:50    caller_name         : Developer Developer
+Mar 16 16:18:50  ----------------------------------------------------------------------
+Mar 16 16:18:50    call_duration       : Nones
+Mar 16 16:18:50    call_datetime_utc   : None
+Mar 16 16:18:50    notes_retry         : True
+Mar 16 16:18:50  ----------------------------------------------------------------------
+Mar 16 16:18:50    body (notes)        : '(AI notes not available)'
+Mar 16 16:18:50  
+Mar 16 16:18:50  [16:18:50] INFO  | Call summary POSTed to Logics successfully
+Mar 16 16:18:50                   | event=call_summary_sent
+Mar 16 16:18:50  [16:18:50] INFO  | Fetching call log entry from RC API
+Mar 16 16:18:50                   | event=rc_api_fetch_call_log  account_id=562216026
+Mar 16 16:18:50  [16:18:50] ERROR | RC API error fetching call log
+Mar 16 16:18:50                   | event=rc_call_log_api_error  status_code=429
+Mar 16 16:18:50  [16:18:50] WARN  | Call log fetch failed (attempt 3/3) — will retry
+Mar 16 16:18:50                   | event=call_summary_fetch_failed  attempt=3
+Mar 16 16:18:50  [16:18:50] WARN  | AI notes not available after 3 attempt(s) — using fallback
+Mar 16 16:18:50                   | event=call_summary_notes_unavailable
+Mar 16 16:18:50  [16:18:50] INFO  | Sending call summary to Logics:
+Mar 16 16:18:50  
+Mar 16 16:18:50                       --- CALL SUMMARY PAYLOAD ---                     
+Mar 16 16:18:50    subject             : RingCentral Call Summary By: Developer Developer
+Mar 16 16:18:50  ----------------------------------------------------------------------
+Mar 16 16:18:50    call_id             : s-a78602719f57az19cf76ec6eez23ece2b0000
+Mar 16 16:18:50    call_direction      : Outbound
+Mar 16 16:18:50    agent_name          : Developer Developer
+Mar 16 16:18:50    agent_number        : +18882350004
+Mar 16 16:18:50    caller_number       : +19495708172
+Mar 16 16:18:50    caller_name         : Developer Developer
+Mar 16 16:18:50  ----------------------------------------------------------------------
+Mar 16 16:18:50    call_duration       : Nones
+Mar 16 16:18:50    call_datetime_utc   : None
+Mar 16 16:18:50    notes_retry         : True
+Mar 16 16:18:50  ----------------------------------------------------------------------
+Mar 16 16:18:50    body (notes)        : '(AI notes not available)'
+Mar 16 16:18:50  
+Mar 16 16:18:50  [16:18:50] INFO  | Call summary POSTed to Logics successfully
+Mar 16 16:18:50                   | event=call_summary_sent
+Mar 16 16:18:51  [16:18:51] INFO  | Fetching call log entry from RC API
+Mar 16 16:18:51                   | event=rc_api_fetch_call_log  account_id=562216026
+Mar 16 16:18:51  [16:18:51] ERROR | RC API error fetching call log
+Mar 16 16:18:51                   | event=rc_call_log_api_error  status_code=429
+Mar 16 16:18:51  [16:18:51] WARN  | Call log fetch failed (attempt 3/3) — will retry
+Mar 16 16:18:51                   | event=call_summary_fetch_failed  attempt=3
+Mar 16 16:18:51  [16:18:51] WARN  | AI notes not available after 3 attempt(s) — using fallback
+Mar 16 16:18:51                   | event=call_summary_notes_unavailable
+Mar 16 16:18:51  [16:18:51] INFO  | Sending call summary to Logics:
+Mar 16 16:18:51  
+Mar 16 16:18:51                       --- CALL SUMMARY PAYLOAD ---                     
+Mar 16 16:18:51    subject             : RingCentral Call Summary By: 18882350004 - 1a. Customer Service Department (CS3)
+Mar 16 16:18:51  ----------------------------------------------------------------------
+Mar 16 16:18:51    call_id             : s-a7860161cc72bz19cf76f223cz239ba6f0000
+Mar 16 16:18:51    call_direction      : Outbound
+Mar 16 16:18:51    agent_name          : 18882350004 - 1a. Customer Service Department (CS3)
+Mar 16 16:18:51    agent_number        : +17608676108
+Mar 16 16:18:51    caller_number       : None
+Mar 16 16:18:51    caller_name         : None
+Mar 16 16:18:51  ----------------------------------------------------------------------
+Mar 16 16:18:51    call_duration       : Nones
+Mar 16 16:18:51    call_datetime_utc   : None
+Mar 16 16:18:51    notes_retry         : True
+Mar 16 16:18:51  ----------------------------------------------------------------------
+Mar 16 16:18:51    body (notes)        : '(AI notes not available)'
+Mar 16 16:18:51  
+Mar 16 16:18:51  [16:18:51] INFO  | Call summary POSTed to Logics successfully
+Mar 16 16:18:51                   | event=call_summary_sent
+Mar 16 16:18:52  [16:18:52] INFO  | RC webhook notification received
+Mar 16 16:18:52                   | event=rc_notification_received
+Mar 16 16:18:52  [16:18:52] INFO  | Telephony event received
+Mar 16 16:18:52                   | event=telephony_event_received
+Mar 16 16:18:52  [16:18:52] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:52                   | event=telephony_event_skipped
+Mar 16 16:18:52  [16:18:52] INFO  | RC webhook notification received
+Mar 16 16:18:52                   | event=rc_notification_received
+Mar 16 16:18:52  [16:18:52] INFO  | Telephony event received
+Mar 16 16:18:52                   | event=telephony_event_received
+Mar 16 16:18:52  [16:18:52] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:52                   | event=telephony_event_skipped
+Mar 16 16:18:53  [16:18:53] INFO  | RC webhook notification received
+Mar 16 16:18:53                   | event=rc_notification_received
+Mar 16 16:18:53  [16:18:53] INFO  | Telephony event received
+Mar 16 16:18:53                   | event=telephony_event_received
+Mar 16 16:18:53  [16:18:53] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:53                   | event=telephony_event_skipped
+Mar 16 16:18:54  [16:18:54] INFO  | Fetching call log entry from RC API
+Mar 16 16:18:54                   | event=rc_api_fetch_call_log  account_id=562216026
+Mar 16 16:18:54  [16:18:54] ERROR | RC API error fetching call log
+Mar 16 16:18:54                   | event=rc_call_log_api_error  status_code=429
+Mar 16 16:18:54  [16:18:54] WARN  | Call log fetch failed (attempt 3/3) — will retry
+Mar 16 16:18:54                   | event=call_summary_fetch_failed  attempt=3
+Mar 16 16:18:54  [16:18:54] WARN  | AI notes not available after 3 attempt(s) — using fallback
+Mar 16 16:18:54                   | event=call_summary_notes_unavailable
+Mar 16 16:18:54  [16:18:54] INFO  | Sending call summary to Logics:
+Mar 16 16:18:54  
+Mar 16 16:18:54                       --- CALL SUMMARY PAYLOAD ---                     
+Mar 16 16:18:54    subject             : RingCentral Call Summary By: Main Company Number
+Mar 16 16:18:54  ----------------------------------------------------------------------
+Mar 16 16:18:54    call_id             : s-a7860161cc72bz19cf76f91bdz239f48e0000
+Mar 16 16:18:54    call_direction      : Inbound
+Mar 16 16:18:54    agent_name          : Main Company Number
+Mar 16 16:18:54    agent_number        : +18882350004
+Mar 16 16:18:54    caller_number       : +15598713344
+Mar 16 16:18:54    caller_name         : TATES ANTHONY
+Mar 16 16:18:54  ----------------------------------------------------------------------
+Mar 16 16:18:54    call_duration       : Nones
+Mar 16 16:18:54    call_datetime_utc   : None
+Mar 16 16:18:54    notes_retry         : True
+Mar 16 16:18:54  ----------------------------------------------------------------------
+Mar 16 16:18:54    body (notes)        : '(AI notes not available)'
+Mar 16 16:18:54  
+Mar 16 16:18:54  [16:18:54] INFO  | Call summary POSTed to Logics successfully
+Mar 16 16:18:54                   | event=call_summary_sent
+Mar 16 16:18:54  [16:18:54] INFO  | RC webhook notification received
+Mar 16 16:18:54                   | event=rc_notification_received
+Mar 16 16:18:54  [16:18:54] INFO  | Telephony event received
+Mar 16 16:18:54                   | event=telephony_event_received
+Mar 16 16:18:54  [16:18:54] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:54                   | event=telephony_event_skipped
+Mar 16 16:18:54  [16:18:54] INFO  | RC webhook notification received
+Mar 16 16:18:54                   | event=rc_notification_received
+Mar 16 16:18:54  [16:18:54] INFO  | Telephony event received
+Mar 16 16:18:54                   | event=telephony_event_received
+Mar 16 16:18:54  [16:18:54] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:54                   | event=telephony_event_skipped
+Mar 16 16:18:55  [16:18:55] INFO  | RC webhook notification received
+Mar 16 16:18:55                   | event=rc_notification_received
+Mar 16 16:18:55  [16:18:55] INFO  | Telephony event received
+Mar 16 16:18:55                   | event=telephony_event_received
+Mar 16 16:18:55  [16:18:55] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:55                   | event=telephony_event_skipped
+Mar 16 16:18:55  [16:18:55] INFO  | RC webhook notification received
+Mar 16 16:18:55                   | event=rc_notification_received
+Mar 16 16:18:55  [16:18:55] INFO  | Telephony event received
+Mar 16 16:18:55                   | event=telephony_event_received
+Mar 16 16:18:55  [16:18:55] INFO  | Call-ended (Disconnected) detected — routing to CallSummaryHandler
+Mar 16 16:18:55                   | event=call_ended_event_detected
+Mar 16 16:18:55  [16:18:55] INFO  | Processing call-ended event
+Mar 16 16:18:55                   | event=call_summary_start  account_id=562216026
+Mar 16 16:18:55  [16:18:55] INFO  | Waiting 10.0s before call log fetch (attempt 1/3)
+Mar 16 16:18:55                   | event=call_summary_waiting  attempt=1
+Mar 16 16:18:55  [16:18:55] INFO  | RC webhook notification received
+Mar 16 16:18:55                   | event=rc_notification_received
+Mar 16 16:18:55  [16:18:55] INFO  | Telephony event received
+Mar 16 16:18:55                   | event=telephony_event_received
+Mar 16 16:18:55  [16:18:55] INFO  | Call-ended event already processed for this session — skipping duplicate
+Mar 16 16:18:55                   | event=call_ended_duplicate_skipped
+Mar 16 16:18:56  [16:18:56] INFO  | RC webhook notification received
+Mar 16 16:18:56                   | event=rc_notification_received
+Mar 16 16:18:56  [16:18:56] INFO  | Telephony event received
+Mar 16 16:18:56                   | event=telephony_event_received
+Mar 16 16:18:56  [16:18:56] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:56                   | event=telephony_event_skipped
+Mar 16 16:18:56  [16:18:56] INFO  | RC webhook notification received
+Mar 16 16:18:56                   | event=rc_notification_received
+Mar 16 16:18:56  [16:18:56] INFO  | Telephony event received
+Mar 16 16:18:56                   | event=telephony_event_received
+Mar 16 16:18:56  [16:18:56] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:56                   | event=telephony_event_skipped
+Mar 16 16:18:57  [16:18:57] INFO  | RC webhook notification received
+Mar 16 16:18:57                   | event=rc_notification_received
+Mar 16 16:18:57  [16:18:57] INFO  | Telephony event received
+Mar 16 16:18:57                   | event=telephony_event_received
+Mar 16 16:18:57  [16:18:57] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:57                   | event=telephony_event_skipped
+Mar 16 16:18:57  [16:18:57] INFO  | RC webhook notification received
+Mar 16 16:18:57                   | event=rc_notification_received
+Mar 16 16:18:57  [16:18:57] INFO  | Telephony event received
+Mar 16 16:18:57                   | event=telephony_event_received
+Mar 16 16:18:57  [16:18:57] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:18:57                   | event=telephony_event_skipped
+Mar 16 16:18:58  [16:18:58] INFO  | RC webhook notification received
+Mar 16 16:18:58                   | event=rc_notification_received
+Mar 16 16:18:58  [16:18:58] INFO  | Processing SMS notification
+Mar 16 16:18:58                   | event=processing_notification  account_id=315079026  extension_id=2198226027  new_message_ids=['3631230962027']  message_count=1
+Mar 16 16:18:58  [16:18:58] INFO  | Fetching message from RC API
+Mar 16 16:18:58                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631230962027
+Mar 16 16:18:58  [16:18:58] INFO  | RC webhook notification received
+Mar 16 16:18:58                   | event=rc_notification_received
+Mar 16 16:18:58  [16:18:58] INFO  | Telephony event received
+Mar 16 16:18:58                   | event=telephony_event_received
+Mar 16 16:18:58  [16:18:58] INFO  | Call-ended (Disconnected) detected — routing to CallSummaryHandler
+Mar 16 16:18:58                   | event=call_ended_event_detected
+Mar 16 16:18:58  [16:18:58] INFO  | Processing call-ended event
+Mar 16 16:18:58                   | event=call_summary_start  account_id=562216026
+Mar 16 16:18:58  [16:18:58] INFO  | Waiting 10.0s before call log fetch (attempt 1/3)
+Mar 16 16:18:58                   | event=call_summary_waiting  attempt=1
+Mar 16 16:18:58  [16:18:58] INFO  | RC message fetched successfully
+Mar 16 16:18:58                   | event=rc_message_fetched  message_id=3631230962027  direction=Outbound
+Mar 16 16:18:58  [16:18:58] INFO  | Sending to Zapier:
+Mar 16 16:18:58  
+Mar 16 16:18:58  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:18:58    source              : ringcentral
+Mar 16 16:18:58    event_type          : outbound_sms
+Mar 16 16:18:58    message_id          : 3631230962027
+Mar 16 16:18:58    message_type        : SMS
+Mar 16 16:18:58    direction           : Outbound
+Mar 16 16:18:58  ----------------------------------------------------------------------
+Mar 16 16:18:58    from_number         : +19499662028
+Mar 16 16:18:58    from_name           : Mark Baylon
+Mar 16 16:18:58    from_location       : Irvine, CA
+Mar 16 16:18:58  ----------------------------------------------------------------------
+Mar 16 16:18:58    to_number           : +17205692420
+Mar 16 16:18:58    to_name             : None
+Mar 16 16:18:58    to_location         : None
+Mar 16 16:18:58    all_to_numbers      : +17205692420
+Mar 16 16:18:58    all_to_names        : None
+Mar 16 16:18:58  ----------------------------------------------------------------------
+Mar 16 16:18:58    subject             : ''
+Mar 16 16:18:58    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:18:58  ----------------------------------------------------------------------
+Mar 16 16:18:58    timestamp_utc       : 2026-03-16T16:18:47+00:00
+Mar 16 16:18:58    last_modified_utc   : 2026-03-16T16:18:50.222000+00:00
+Mar 16 16:18:58    sms_delivery_time   : None
+Mar 16 16:18:58    received_at_utc     : 2026-03-16T16:18:58.714827+00:00
+Mar 16 16:18:58  ----------------------------------------------------------------------
+Mar 16 16:18:58    account_id          : 315079026
+Mar 16 16:18:58    extension_id        : 2198226027
+Mar 16 16:18:58    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:18:58    conversation_id     : 1107848428314218595
+Mar 16 16:18:58  ----------------------------------------------------------------------
+Mar 16 16:18:58    read_status         : Read
+Mar 16 16:18:58    message_status      : Delivered
+Mar 16 16:18:58    delivery_error_code : None
+Mar 16 16:18:58    priority            : Normal
+Mar 16 16:18:58    availability        : Alive
+Mar 16 16:18:58    attachment_count    : 1
+Mar 16 16:18:58  ----------------------------------------------------------------------
+Mar 16 16:18:58    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631230962027
+Mar 16 16:18:58    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:18:58    rc_event_uuid       : 1667569494161240224
+Mar 16 16:18:58  ----------------------------------------------------------------------
+Mar 16 16:18:58  
+Mar 16 16:18:58                   | event=zapier_payload_sending  message_id=3631230962027  direction=Outbound
+Mar 16 16:18:58  [16:18:58] INFO  | Sending payload to Zapier
+Mar 16 16:18:58                   | event=zapier_forward_attempt  message_id=3631230962027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+17205692420
+Mar 16 16:18:58  [16:18:58] INFO  | Zapier webhook accepted payload
+Mar 16 16:18:58                   | event=zapier_forward_success  message_id=3631230962027  attempt=1  zapier_status_code=200
+Mar 16 16:18:59  [16:18:59] INFO  | RC webhook notification received
+Mar 16 16:18:59                   | event=rc_notification_received
+Mar 16 16:18:59  [16:18:59] INFO  | Telephony event received
+Mar 16 16:18:59                   | event=telephony_event_received
+Mar 16 16:18:59  [16:18:59] INFO  | Call-ended event already processed for this session — skipping duplicate
+Mar 16 16:18:59                   | event=call_ended_duplicate_skipped
+Mar 16 16:19:00  [16:19:00] INFO  | Fetching call log entry from RC API
+Mar 16 16:19:00                   | event=rc_api_fetch_call_log  account_id=562216026
+Mar 16 16:19:01  [16:19:01] ERROR | RC API error fetching call log
+Mar 16 16:19:01                   | event=rc_call_log_api_error  status_code=429
+Mar 16 16:19:01  [16:19:01] WARN  | Call log fetch failed (attempt 3/3) — will retry
+Mar 16 16:19:01                   | event=call_summary_fetch_failed  attempt=3
+Mar 16 16:19:01  [16:19:01] WARN  | AI notes not available after 3 attempt(s) — using fallback
+Mar 16 16:19:01                   | event=call_summary_notes_unavailable
+Mar 16 16:19:01  [16:19:01] INFO  | Sending call summary to Logics:
+Mar 16 16:19:01  
+Mar 16 16:19:01                       --- CALL SUMMARY PAYLOAD ---                     
+Mar 16 16:19:01    subject             : RingCentral Call Summary By: Main Company Number
+Mar 16 16:19:01  ----------------------------------------------------------------------
+Mar 16 16:19:01    call_id             : s-a78602518ce7bz19cf76fafd1z23b35190000
+Mar 16 16:19:01    call_direction      : Inbound
+Mar 16 16:19:01    agent_name          : Main Company Number
+Mar 16 16:19:01    agent_number        : +18882350004
+Mar 16 16:19:01    caller_number       : +17202321569
+Mar 16 16:19:01    caller_name         : None
+Mar 16 16:19:01  ----------------------------------------------------------------------
+Mar 16 16:19:01    call_duration       : Nones
+Mar 16 16:19:01    call_datetime_utc   : None
+Mar 16 16:19:01    notes_retry         : True
+Mar 16 16:19:01  ----------------------------------------------------------------------
+Mar 16 16:19:01    body (notes)        : '(AI notes not available)'
+Mar 16 16:19:01  
+Mar 16 16:19:01  [16:19:01] INFO  | Call summary POSTed to Logics successfully
+Mar 16 16:19:01                   | event=call_summary_sent
+Mar 16 16:19:01  [16:19:01] INFO  | RC webhook notification received
+Mar 16 16:19:01                   | event=rc_notification_received
+Mar 16 16:19:01  [16:19:01] INFO  | Telephony event received
+Mar 16 16:19:01                   | event=telephony_event_received
+Mar 16 16:19:01  [16:19:01] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:01                   | event=telephony_event_skipped
+Mar 16 16:19:01  [16:19:01] INFO  | RC webhook notification received
+Mar 16 16:19:01                   | event=rc_notification_received
+Mar 16 16:19:01  [16:19:01] INFO  | Telephony event received
+Mar 16 16:19:01                   | event=telephony_event_received
+Mar 16 16:19:01  [16:19:01] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:01                   | event=telephony_event_skipped
+Mar 16 16:19:01  [16:19:01] INFO  | RC webhook notification received
+Mar 16 16:19:01                   | event=rc_notification_received
+Mar 16 16:19:01  [16:19:01] INFO  | Telephony event received
+Mar 16 16:19:01                   | event=telephony_event_received
+Mar 16 16:19:01  [16:19:01] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:01                   | event=telephony_event_skipped
+Mar 16 16:19:05  [16:19:05] INFO  | RC webhook notification received
+Mar 16 16:19:05                   | event=rc_notification_received
+Mar 16 16:19:05  [16:19:05] INFO  | Telephony event received
+Mar 16 16:19:05                   | event=telephony_event_received
+Mar 16 16:19:05  [16:19:05] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:05                   | event=telephony_event_skipped
+Mar 16 16:19:05  [16:19:05] INFO  | RC webhook notification received
+Mar 16 16:19:05                   | event=rc_notification_received
+Mar 16 16:19:05  [16:19:05] INFO  | Telephony event received
+Mar 16 16:19:05                   | event=telephony_event_received
+Mar 16 16:19:05  [16:19:05] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:05                   | event=telephony_event_skipped
+Mar 16 16:19:05  [16:19:05] INFO  | Fetching call log entry from RC API
+Mar 16 16:19:05                   | event=rc_api_fetch_call_log  account_id=562216026
+Mar 16 16:19:06  [16:19:06] INFO  | RC webhook notification received
+Mar 16 16:19:06                   | event=rc_notification_received
+Mar 16 16:19:06  [16:19:06] INFO  | Telephony event received
+Mar 16 16:19:06                   | event=telephony_event_received
+Mar 16 16:19:06  [16:19:06] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:06                   | event=telephony_event_skipped
+Mar 16 16:19:06  [16:19:06] ERROR | RC API error fetching call log
+Mar 16 16:19:06                   | event=rc_call_log_api_error  status_code=429
+Mar 16 16:19:06  [16:19:06] WARN  | Call log fetch failed (attempt 1/3) — will retry
+Mar 16 16:19:06                   | event=call_summary_fetch_failed  attempt=1
+Mar 16 16:19:06  [16:19:06] INFO  | Waiting 30.0s before call log fetch (attempt 2/3)
+Mar 16 16:19:06                   | event=call_summary_waiting  attempt=2
+Mar 16 16:19:08  [16:19:08] INFO  | RC webhook notification received
+Mar 16 16:19:08                   | event=rc_notification_received
+Mar 16 16:19:08  [16:19:08] INFO  | No new SMS message IDs in notification
+Mar 16 16:19:08                   | event=no_sms_messages
+Mar 16 16:19:08  [16:19:08] INFO  | RC webhook notification received
+Mar 16 16:19:08                   | event=rc_notification_received
+Mar 16 16:19:08  [16:19:08] INFO  | Processing SMS notification
+Mar 16 16:19:08                   | event=processing_notification  account_id=315079026  extension_id=2198226027  new_message_ids=['3631231235027', '3631231121027', '3631231446027', '3631231348027']  message_count=4
+Mar 16 16:19:08  [16:19:08] INFO  | Fetching message from RC API
+Mar 16 16:19:08                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631231235027
+Mar 16 16:19:08  [16:19:08] INFO  | Fetching message from RC API
+Mar 16 16:19:08                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631231121027
+Mar 16 16:19:08  [16:19:08] INFO  | Fetching message from RC API
+Mar 16 16:19:08                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631231446027
+Mar 16 16:19:08  [16:19:08] INFO  | Fetching message from RC API
+Mar 16 16:19:08                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631231348027
+Mar 16 16:19:08  [16:19:08] INFO  | RC webhook notification received
+Mar 16 16:19:08                   | event=rc_notification_received
+Mar 16 16:19:08  [16:19:08] INFO  | Processing SMS notification
+Mar 16 16:19:08                   | event=processing_notification  account_id=315079026  extension_id=2304240027  new_message_ids=['3631231406027']  message_count=1
+Mar 16 16:19:08  [16:19:08] INFO  | Fetching message from RC API
+Mar 16 16:19:08                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2304240027  message_id=3631231406027
+Mar 16 16:19:08  [16:19:08] INFO  | RC message fetched successfully
+Mar 16 16:19:08                   | event=rc_message_fetched  message_id=3631231235027  direction=Outbound
+Mar 16 16:19:08  [16:19:08] INFO  | RC message fetched successfully
+Mar 16 16:19:08                   | event=rc_message_fetched  message_id=3631231446027  direction=Outbound
+Mar 16 16:19:08  [16:19:08] INFO  | RC message fetched successfully
+Mar 16 16:19:08                   | event=rc_message_fetched  message_id=3631231348027  direction=Outbound
+Mar 16 16:19:08  [16:19:08] INFO  | RC message fetched successfully
+Mar 16 16:19:08                   | event=rc_message_fetched  message_id=3631231121027  direction=Outbound
+Mar 16 16:19:08  [16:19:08] INFO  | Fetching call log entry from RC API
+Mar 16 16:19:08                   | event=rc_api_fetch_call_log  account_id=562216026
+Mar 16 16:19:08  [16:19:08] INFO  | Sending to Zapier:
+Mar 16 16:19:08  
+Mar 16 16:19:08  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:08    source              : ringcentral
+Mar 16 16:19:08    event_type          : outbound_sms
+Mar 16 16:19:08    message_id          : 3631231235027
+Mar 16 16:19:08    message_type        : SMS
+Mar 16 16:19:08    direction           : Outbound
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    from_number         : +19499662028
+Mar 16 16:19:08    from_name           : Mark Baylon
+Mar 16 16:19:08    from_location       : Irvine, CA
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    to_number           : +12053376338
+Mar 16 16:19:08    to_name             : None
+Mar 16 16:19:08    to_location         : None
+Mar 16 16:19:08    all_to_numbers      : +12053376338
+Mar 16 16:19:08    all_to_names        : None
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    subject             : ''
+Mar 16 16:19:08    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    timestamp_utc       : 2026-03-16T16:18:52+00:00
+Mar 16 16:19:08    last_modified_utc   : 2026-03-16T16:18:55.425000+00:00
+Mar 16 16:19:08    sms_delivery_time   : None
+Mar 16 16:19:08    received_at_utc     : 2026-03-16T16:19:08.665653+00:00
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    account_id          : 315079026
+Mar 16 16:19:08    extension_id        : 2198226027
+Mar 16 16:19:08    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:08    conversation_id     : 6589171542537325126
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    read_status         : Read
+Mar 16 16:19:08    message_status      : Delivered
+Mar 16 16:19:08    delivery_error_code : None
+Mar 16 16:19:08    priority            : Normal
+Mar 16 16:19:08    availability        : Alive
+Mar 16 16:19:08    attachment_count    : 1
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631231235027
+Mar 16 16:19:08    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:08    rc_event_uuid       : 262451326299934318
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08  
+Mar 16 16:19:08                   | event=zapier_payload_sending  message_id=3631231235027  direction=Outbound
+Mar 16 16:19:08  [16:19:08] INFO  | Sending payload to Zapier
+Mar 16 16:19:08                   | event=zapier_forward_attempt  message_id=3631231235027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+12053376338
+Mar 16 16:19:08  [16:19:08] INFO  | RC message fetched successfully
+Mar 16 16:19:08                   | event=rc_message_fetched  message_id=3631231406027  direction=Outbound
+Mar 16 16:19:08  [16:19:08] INFO  | Sending to Zapier:
+Mar 16 16:19:08  
+Mar 16 16:19:08  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:08    source              : ringcentral
+Mar 16 16:19:08    event_type          : outbound_sms
+Mar 16 16:19:08    message_id          : 3631231406027
+Mar 16 16:19:08    message_type        : SMS
+Mar 16 16:19:08    direction           : Outbound
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    from_number         : +19495369920
+Mar 16 16:19:08    from_name           : Gilbert Paa
+Mar 16 16:19:08    from_location       : Irvine, CA
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    to_number           : +14016419767
+Mar 16 16:19:08    to_name             : None
+Mar 16 16:19:08    to_location         : None
+Mar 16 16:19:08    all_to_numbers      : +14016419767
+Mar 16 16:19:08    all_to_names        : None
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    subject             : ''
+Mar 16 16:19:08    body                : "Hi, this is Gilbert from Clear Start Tax. We need to schedule your resolution appointment with your assigned agent. There's a note that our team found some critical details about your taxes that they need to go over with you asap. \n\nLet me know a suitable day and time from M-F, between 12:30pm-5pm PST, and I'll coordinate with your assigned agent. Feel free to text or call me directly on this number.\n\nAlternatively for your convenience, you can easily book your appointment online at appointments.clearstarttax.com/806138."
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    timestamp_utc       : 2026-03-16T16:18:56+00:00
+Mar 16 16:19:08    last_modified_utc   : 2026-03-16T16:18:58.922000+00:00
+Mar 16 16:19:08    sms_delivery_time   : None
+Mar 16 16:19:08    received_at_utc     : 2026-03-16T16:19:08.714853+00:00
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    account_id          : 315079026
+Mar 16 16:19:08    extension_id        : 2304240027
+Mar 16 16:19:08    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:08    conversation_id     : 5477702198797732428
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    read_status         : Read
+Mar 16 16:19:08    message_status      : Delivered
+Mar 16 16:19:08    delivery_error_code : None
+Mar 16 16:19:08    priority            : Normal
+Mar 16 16:19:08    availability        : Alive
+Mar 16 16:19:08    attachment_count    : 1
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2304240027/message-store/3631231406027
+Mar 16 16:19:08    rc_event_type       : /restapi/v1.0/account/315079026/extension/2304240027/message-store
+Mar 16 16:19:08    rc_event_uuid       : 4870362942957141296
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08  
+Mar 16 16:19:08                   | event=zapier_payload_sending  message_id=3631231406027  direction=Outbound
+Mar 16 16:19:08  [16:19:08] INFO  | Sending payload to Zapier
+Mar 16 16:19:08                   | event=zapier_forward_attempt  message_id=3631231406027  attempt=1  max_retries=3  from_number=+19495369920  to_number=+14016419767
+Mar 16 16:19:08  [16:19:08] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:08                   | event=zapier_forward_success  message_id=3631231235027  attempt=1  zapier_status_code=200
+Mar 16 16:19:08  [16:19:08] INFO  | Sending to Zapier:
+Mar 16 16:19:08  
+Mar 16 16:19:08  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:08    source              : ringcentral
+Mar 16 16:19:08    event_type          : outbound_sms
+Mar 16 16:19:08    message_id          : 3631231121027
+Mar 16 16:19:08    message_type        : SMS
+Mar 16 16:19:08    direction           : Outbound
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    from_number         : +19499662028
+Mar 16 16:19:08    from_name           : Mark Baylon
+Mar 16 16:19:08    from_location       : Irvine, CA
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    to_number           : +12086705068
+Mar 16 16:19:08    to_name             : None
+Mar 16 16:19:08    to_location         : Ammon / Blackfoot / Blanchard - Glengary / Burley / Caldwell / Chubbuck / Coeur D'Alene / Eagle / Emmett Valley / Garden City / Hailey / Hayden / Idaho Falls / Jerome / Lewiston / Meridian / Moreland / Moscow / Mountain Home / Nampa / Orchard / Payette / Pocatello / Post Falls / Rexburg / Sandpoint / Thornton / Twin Falls, ID
+Mar 16 16:19:08    all_to_numbers      : +12086705068
+Mar 16 16:19:08    all_to_names        : None
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    subject             : ''
+Mar 16 16:19:08    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:08  [16:19:08] ERROR | RC API error fetching call log
+Mar 16 16:19:08                   | event=rc_call_log_api_error  status_code=429
+Mar 16 16:19:08  [16:19:08] WARN  | Call log fetch failed (attempt 1/3) — will retry
+Mar 16 16:19:08                   | event=call_summary_fetch_failed  attempt=1
+Mar 16 16:19:08  [16:19:08] INFO  | Waiting 30.0s before call log fetch (attempt 2/3)
+Mar 16 16:19:08                   | event=call_summary_waiting  attempt=2
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    timestamp_utc       : 2026-03-16T16:18:50+00:00
+Mar 16 16:19:08    last_modified_utc   : 2026-03-16T16:18:54.077000+00:00
+Mar 16 16:19:08    sms_delivery_time   : None
+Mar 16 16:19:08    received_at_utc     : 2026-03-16T16:19:08.852216+00:00
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    account_id          : 315079026
+Mar 16 16:19:08    extension_id        : 2198226027
+Mar 16 16:19:08    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:08    conversation_id     : 5432233330490139688
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    read_status         : Read
+Mar 16 16:19:08    message_status      : Delivered
+Mar 16 16:19:08    delivery_error_code : None
+Mar 16 16:19:08    priority            : Normal
+Mar 16 16:19:08    availability        : Alive
+Mar 16 16:19:08    attachment_count    : 1
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631231121027
+Mar 16 16:19:08    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:08    rc_event_uuid       : 262451326299934318
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08  
+Mar 16 16:19:08                   | event=zapier_payload_sending  message_id=3631231121027  direction=Outbound
+Mar 16 16:19:08  [16:19:08] INFO  | Sending payload to Zapier
+Mar 16 16:19:08                   | event=zapier_forward_attempt  message_id=3631231121027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+12086705068
+Mar 16 16:19:08  [16:19:08] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:08                   | event=zapier_forward_success  message_id=3631231406027  attempt=1  zapier_status_code=200
+Mar 16 16:19:08  [16:19:08] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:08                   | event=zapier_forward_success  message_id=3631231121027  attempt=1  zapier_status_code=200
+Mar 16 16:19:08  [16:19:08] INFO  | Sending to Zapier:
+Mar 16 16:19:08  
+Mar 16 16:19:08  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:08    source              : ringcentral
+Mar 16 16:19:08    event_type          : outbound_sms
+Mar 16 16:19:08    message_id          : 3631231446027
+Mar 16 16:19:08    message_type        : SMS
+Mar 16 16:19:08    direction           : Outbound
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    from_number         : +19499662028
+Mar 16 16:19:08    from_name           : Mark Baylon
+Mar 16 16:19:08    from_location       : Irvine, CA
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    to_number           : +14254225442
+Mar 16 16:19:08    to_name             : None
+Mar 16 16:19:08    to_location         : None
+Mar 16 16:19:08    all_to_numbers      : +14254225442
+Mar 16 16:19:08    all_to_names        : None
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    subject             : ''
+Mar 16 16:19:08    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    timestamp_utc       : 2026-03-16T16:18:57+00:00
+Mar 16 16:19:08    last_modified_utc   : 2026-03-16T16:18:59.949000+00:00
+Mar 16 16:19:08    sms_delivery_time   : None
+Mar 16 16:19:08    received_at_utc     : 2026-03-16T16:19:08.921897+00:00
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    account_id          : 315079026
+Mar 16 16:19:08    extension_id        : 2198226027
+Mar 16 16:19:08    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:08    conversation_id     : 4891267118559609824
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    read_status         : Read
+Mar 16 16:19:08    message_status      : Delivered
+Mar 16 16:19:08    delivery_error_code : None
+Mar 16 16:19:08    priority            : Normal
+Mar 16 16:19:08    availability        : Alive
+Mar 16 16:19:08    attachment_count    : 1
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631231446027
+Mar 16 16:19:08    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:08    rc_event_uuid       : 262451326299934318
+Mar 16 16:19:08  ----------------------------------------------------------------------
+Mar 16 16:19:08  
+Mar 16 16:19:08                   | event=zapier_payload_sending  message_id=3631231446027  direction=Outbound
+Mar 16 16:19:08  [16:19:08] INFO  | Sending payload to Zapier
+Mar 16 16:19:08                   | event=zapier_forward_attempt  message_id=3631231446027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+14254225442
+Mar 16 16:19:08  [16:19:08] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:08                   | event=zapier_forward_success  message_id=3631231446027  attempt=1  zapier_status_code=200
+Mar 16 16:19:09  [16:19:09] INFO  | Sending to Zapier:
+Mar 16 16:19:09  
+Mar 16 16:19:09  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:09    source              : ringcentral
+Mar 16 16:19:09    event_type          : outbound_sms
+Mar 16 16:19:09    message_id          : 3631231348027
+Mar 16 16:19:09    message_type        : SMS
+Mar 16 16:19:09    direction           : Outbound
+Mar 16 16:19:09  ----------------------------------------------------------------------
+Mar 16 16:19:09    from_number         : +19499662028
+Mar 16 16:19:09    from_name           : Mark Baylon
+Mar 16 16:19:09    from_location       : Irvine, CA
+Mar 16 16:19:09  ----------------------------------------------------------------------
+Mar 16 16:19:09    to_number           : +14106034858
+Mar 16 16:19:09    to_name             : None
+Mar 16 16:19:09    to_location         : Severna Park, MD
+Mar 16 16:19:09    all_to_numbers      : +14106034858
+Mar 16 16:19:09    all_to_names        : None
+Mar 16 16:19:09  ----------------------------------------------------------------------
+Mar 16 16:19:09    subject             : ''
+Mar 16 16:19:09    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:09  ----------------------------------------------------------------------
+Mar 16 16:19:09    timestamp_utc       : 2026-03-16T16:18:55+00:00
+Mar 16 16:19:09    last_modified_utc   : 2026-03-16T16:18:59.232000+00:00
+Mar 16 16:19:09    sms_delivery_time   : None
+Mar 16 16:19:09    received_at_utc     : 2026-03-16T16:19:08.990734+00:00
+Mar 16 16:19:09  ----------------------------------------------------------------------
+Mar 16 16:19:09    account_id          : 315079026
+Mar 16 16:19:09    extension_id        : 2198226027
+Mar 16 16:19:09    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:09    conversation_id     : 5830469660039605989
+Mar 16 16:19:09  ----------------------------------------------------------------------
+Mar 16 16:19:09    read_status         : Read
+Mar 16 16:19:09    message_status      : Delivered
+Mar 16 16:19:09    delivery_error_code : None
+Mar 16 16:19:09    priority            : Normal
+Mar 16 16:19:09    availability        : Alive
+Mar 16 16:19:09    attachment_count    : 1
+Mar 16 16:19:09  ----------------------------------------------------------------------
+Mar 16 16:19:09    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631231348027
+Mar 16 16:19:09    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:09    rc_event_uuid       : 262451326299934318
+Mar 16 16:19:09  ----------------------------------------------------------------------
+Mar 16 16:19:09  
+Mar 16 16:19:09                   | event=zapier_payload_sending  message_id=3631231348027  direction=Outbound
+Mar 16 16:19:09  [16:19:09] INFO  | Sending payload to Zapier
+Mar 16 16:19:09                   | event=zapier_forward_attempt  message_id=3631231348027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+14106034858
+Mar 16 16:19:09  [16:19:09] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:09                   | event=zapier_forward_success  message_id=3631231348027  attempt=1  zapier_status_code=200
+Mar 16 16:19:10  [16:19:10] INFO  | RC webhook notification received
+Mar 16 16:19:10                   | event=rc_notification_received
+Mar 16 16:19:10  [16:19:10] INFO  | Telephony event received
+Mar 16 16:19:10                   | event=telephony_event_received
+Mar 16 16:19:10  [16:19:10] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:10                   | event=telephony_event_skipped
+Mar 16 16:19:10  [16:19:10] INFO  | RC webhook notification received
+Mar 16 16:19:10                   | event=rc_notification_received
+Mar 16 16:19:10  [16:19:10] INFO  | Telephony event received
+Mar 16 16:19:10                   | event=telephony_event_received
+Mar 16 16:19:10  [16:19:10] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:10                   | event=telephony_event_skipped
+Mar 16 16:19:10  [16:19:10] INFO  | RC webhook notification received
+Mar 16 16:19:10                   | event=rc_notification_received
+Mar 16 16:19:10  [16:19:10] INFO  | Telephony event received
+Mar 16 16:19:10                   | event=telephony_event_received
+Mar 16 16:19:10  [16:19:10] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:10                   | event=telephony_event_skipped
+Mar 16 16:19:14  [16:19:14] INFO  | RC webhook notification received
+Mar 16 16:19:14                   | event=rc_notification_received
+Mar 16 16:19:14  [16:19:14] INFO  | Telephony event received
+Mar 16 16:19:14                   | event=telephony_event_received
+Mar 16 16:19:14  [16:19:14] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:14                   | event=telephony_event_skipped
+Mar 16 16:19:14  [16:19:14] INFO  | RC webhook notification received
+Mar 16 16:19:14                   | event=rc_notification_received
+Mar 16 16:19:14  [16:19:14] INFO  | Telephony event received
+Mar 16 16:19:14                   | event=telephony_event_received
+Mar 16 16:19:14  [16:19:14] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:14                   | event=telephony_event_skipped
+Mar 16 16:19:18  [16:19:18] INFO  | RC webhook notification received
+Mar 16 16:19:18                   | event=rc_notification_received
+Mar 16 16:19:18  [16:19:18] INFO  | Processing SMS notification
+Mar 16 16:19:18                   | event=processing_notification  account_id=315079026  extension_id=2198226027  new_message_ids=['3631231536027', '3631231967027', '3631231747027', '3631231647027', '3631231852027']  message_count=5
+Mar 16 16:19:18  [16:19:18] INFO  | Fetching message from RC API
+Mar 16 16:19:18                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631231536027
+Mar 16 16:19:18  [16:19:18] INFO  | Fetching message from RC API
+Mar 16 16:19:18                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631231967027
+Mar 16 16:19:18  [16:19:18] INFO  | Fetching message from RC API
+Mar 16 16:19:18                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631231747027
+Mar 16 16:19:18  [16:19:18] INFO  | Fetching message from RC API
+Mar 16 16:19:18                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631231647027
+Mar 16 16:19:18  [16:19:18] INFO  | Fetching message from RC API
+Mar 16 16:19:18                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631231852027
+Mar 16 16:19:18  [16:19:18] INFO  | RC message fetched successfully
+Mar 16 16:19:18                   | event=rc_message_fetched  message_id=3631231967027  direction=Outbound
+Mar 16 16:19:18  [16:19:18] INFO  | RC message fetched successfully
+Mar 16 16:19:18                   | event=rc_message_fetched  message_id=3631231647027  direction=Outbound
+Mar 16 16:19:18  [16:19:18] INFO  | RC message fetched successfully
+Mar 16 16:19:18                   | event=rc_message_fetched  message_id=3631231852027  direction=Outbound
+Mar 16 16:19:18  [16:19:18] INFO  | RC message fetched successfully
+Mar 16 16:19:18                   | event=rc_message_fetched  message_id=3631231536027  direction=Outbound
+Mar 16 16:19:18  [16:19:18] INFO  | RC message fetched successfully
+Mar 16 16:19:18                   | event=rc_message_fetched  message_id=3631231747027  direction=Outbound
+Mar 16 16:19:18  [16:19:18] INFO  | Sending to Zapier:
+Mar 16 16:19:18  
+Mar 16 16:19:18  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:18    source              : ringcentral
+Mar 16 16:19:18    event_type          : outbound_sms
+Mar 16 16:19:18    message_id          : 3631231536027
+Mar 16 16:19:18    message_type        : SMS
+Mar 16 16:19:18    direction           : Outbound
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    from_number         : +19499662028
+Mar 16 16:19:18    from_name           : Mark Baylon
+Mar 16 16:19:18    from_location       : Irvine, CA
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    to_number           : +19122437369
+Mar 16 16:19:18    to_name             : None
+Mar 16 16:19:18    to_location         : Statesboro, GA
+Mar 16 16:19:18    all_to_numbers      : +19122437369
+Mar 16 16:19:18    all_to_names        : None
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    subject             : ''
+Mar 16 16:19:18    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    timestamp_utc       : 2026-03-16T16:18:59+00:00
+Mar 16 16:19:18    last_modified_utc   : 2026-03-16T16:19:03.667000+00:00
+Mar 16 16:19:18    sms_delivery_time   : None
+Mar 16 16:19:18    received_at_utc     : 2026-03-16T16:19:18.676799+00:00
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    account_id          : 315079026
+Mar 16 16:19:18    extension_id        : 2198226027
+Mar 16 16:19:18    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:18    conversation_id     : 2804528043648266092
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    read_status         : Read
+Mar 16 16:19:18    message_status      : Delivered
+Mar 16 16:19:18    delivery_error_code : None
+Mar 16 16:19:18    priority            : Normal
+Mar 16 16:19:18    availability        : Alive
+Mar 16 16:19:18    attachment_count    : 1
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631231536027
+Mar 16 16:19:18    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:18    rc_event_uuid       : 243940700347747135
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18  
+Mar 16 16:19:18                   | event=zapier_payload_sending  message_id=3631231536027  direction=Outbound
+Mar 16 16:19:18  [16:19:18] INFO  | Sending payload to Zapier
+Mar 16 16:19:18                   | event=zapier_forward_attempt  message_id=3631231536027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+19122437369
+Mar 16 16:19:18  [16:19:18] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:18                   | event=zapier_forward_success  message_id=3631231536027  attempt=1  zapier_status_code=200
+Mar 16 16:19:18  [16:19:18] INFO  | Sending to Zapier:
+Mar 16 16:19:18  
+Mar 16 16:19:18  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:18    source              : ringcentral
+Mar 16 16:19:18    event_type          : outbound_sms
+Mar 16 16:19:18    message_id          : 3631231967027
+Mar 16 16:19:18    message_type        : SMS
+Mar 16 16:19:18    direction           : Outbound
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    from_number         : +19499662028
+Mar 16 16:19:18    from_name           : Mark Baylon
+Mar 16 16:19:18    from_location       : Irvine, CA
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    to_number           : +15152495656
+Mar 16 16:19:18    to_name             : None
+Mar 16 16:19:18    to_location         : Des Moines, IA
+Mar 16 16:19:18    all_to_numbers      : +15152495656
+Mar 16 16:19:18    all_to_names        : None
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    subject             : ''
+Mar 16 16:19:18    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    timestamp_utc       : 2026-03-16T16:19:09+00:00
+Mar 16 16:19:18    last_modified_utc   : 2026-03-16T16:19:12.176000+00:00
+Mar 16 16:19:18    sms_delivery_time   : None
+Mar 16 16:19:18    received_at_utc     : 2026-03-16T16:19:18.755221+00:00
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    account_id          : 315079026
+Mar 16 16:19:18    extension_id        : 2198226027
+Mar 16 16:19:18    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:18    conversation_id     : 4968125398024555310
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    read_status         : Read
+Mar 16 16:19:18    message_status      : Delivered
+Mar 16 16:19:18    delivery_error_code : None
+Mar 16 16:19:18    priority            : Normal
+Mar 16 16:19:18    availability        : Alive
+Mar 16 16:19:18    attachment_count    : 1
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631231967027
+Mar 16 16:19:18    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:18    rc_event_uuid       : 243940700347747135
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18  
+Mar 16 16:19:18                   | event=zapier_payload_sending  message_id=3631231967027  direction=Outbound
+Mar 16 16:19:18  [16:19:18] INFO  | Sending payload to Zapier
+Mar 16 16:19:18                   | event=zapier_forward_attempt  message_id=3631231967027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+15152495656
+Mar 16 16:19:18  [16:19:18] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:18                   | event=zapier_forward_success  message_id=3631231967027  attempt=1  zapier_status_code=200
+Mar 16 16:19:18  [16:19:18] INFO  | Sending to Zapier:
+Mar 16 16:19:18  
+Mar 16 16:19:18  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:18    source              : ringcentral
+Mar 16 16:19:18    event_type          : outbound_sms
+Mar 16 16:19:18    message_id          : 3631231747027
+Mar 16 16:19:18    message_type        : SMS
+Mar 16 16:19:18    direction           : Outbound
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    from_number         : +19499662028
+Mar 16 16:19:18    from_name           : Mark Baylon
+Mar 16 16:19:18    from_location       : Irvine, CA
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    to_number           : +16084455515
+Mar 16 16:19:18    to_name             : None
+Mar 16 16:19:18    to_location         : None
+Mar 16 16:19:18    all_to_numbers      : +16084455515
+Mar 16 16:19:18    all_to_names        : None
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    subject             : ''
+Mar 16 16:19:18    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    timestamp_utc       : 2026-03-16T16:19:04+00:00
+Mar 16 16:19:18    last_modified_utc   : 2026-03-16T16:19:06.810000+00:00
+Mar 16 16:19:18    sms_delivery_time   : None
+Mar 16 16:19:18    received_at_utc     : 2026-03-16T16:19:18.823656+00:00
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    account_id          : 315079026
+Mar 16 16:19:18    extension_id        : 2198226027
+Mar 16 16:19:18    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:18    conversation_id     : 2790290786375596489
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    read_status         : Read
+Mar 16 16:19:18    message_status      : Delivered
+Mar 16 16:19:18    delivery_error_code : None
+Mar 16 16:19:18    priority            : Normal
+Mar 16 16:19:18    availability        : Alive
+Mar 16 16:19:18    attachment_count    : 1
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631231747027
+Mar 16 16:19:18    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:18    rc_event_uuid       : 243940700347747135
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18  
+Mar 16 16:19:18                   | event=zapier_payload_sending  message_id=3631231747027  direction=Outbound
+Mar 16 16:19:18  [16:19:18] INFO  | Sending payload to Zapier
+Mar 16 16:19:18                   | event=zapier_forward_attempt  message_id=3631231747027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+16084455515
+Mar 16 16:19:18  [16:19:18] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:18                   | event=zapier_forward_success  message_id=3631231747027  attempt=1  zapier_status_code=200
+Mar 16 16:19:18  [16:19:18] INFO  | Sending to Zapier:
+Mar 16 16:19:18  
+Mar 16 16:19:18  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:18    source              : ringcentral
+Mar 16 16:19:18    event_type          : outbound_sms
+Mar 16 16:19:18    message_id          : 3631231647027
+Mar 16 16:19:18    message_type        : SMS
+Mar 16 16:19:18    direction           : Outbound
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    from_number         : +19499662028
+Mar 16 16:19:18    from_name           : Mark Baylon
+Mar 16 16:19:18    from_location       : Irvine, CA
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    to_number           : +14194660475
+Mar 16 16:19:18    to_name             : None
+Mar 16 16:19:18    to_location         : Toledo (Lucas), OH
+Mar 16 16:19:18    all_to_numbers      : +14194660475
+Mar 16 16:19:18    all_to_names        : None
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    subject             : ''
+Mar 16 16:19:18    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    timestamp_utc       : 2026-03-16T16:19:02+00:00
+Mar 16 16:19:18    last_modified_utc   : 2026-03-16T16:19:05.217000+00:00
+Mar 16 16:19:18    sms_delivery_time   : None
+Mar 16 16:19:18    received_at_utc     : 2026-03-16T16:19:18.891944+00:00
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    account_id          : 315079026
+Mar 16 16:19:18    extension_id        : 2198226027
+Mar 16 16:19:18    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:18    conversation_id     : 1548779647747743212
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    read_status         : Read
+Mar 16 16:19:18    message_status      : Delivered
+Mar 16 16:19:18    delivery_error_code : None
+Mar 16 16:19:18    priority            : Normal
+Mar 16 16:19:18    availability        : Alive
+Mar 16 16:19:18    attachment_count    : 1
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631231647027
+Mar 16 16:19:18    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:18    rc_event_uuid       : 243940700347747135
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18  
+Mar 16 16:19:18                   | event=zapier_payload_sending  message_id=3631231647027  direction=Outbound
+Mar 16 16:19:18  [16:19:18] INFO  | Sending payload to Zapier
+Mar 16 16:19:18                   | event=zapier_forward_attempt  message_id=3631231647027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+14194660475
+Mar 16 16:19:18  [16:19:18] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:18                   | event=zapier_forward_success  message_id=3631231647027  attempt=1  zapier_status_code=200
+Mar 16 16:19:18  [16:19:18] INFO  | Sending to Zapier:
+Mar 16 16:19:18  
+Mar 16 16:19:18  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:18    source              : ringcentral
+Mar 16 16:19:18    event_type          : outbound_sms
+Mar 16 16:19:18    message_id          : 3631231852027
+Mar 16 16:19:18    message_type        : SMS
+Mar 16 16:19:18    direction           : Outbound
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    from_number         : +19499662028
+Mar 16 16:19:18    from_name           : Mark Baylon
+Mar 16 16:19:18    from_location       : Irvine, CA
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    to_number           : +17135740314
+Mar 16 16:19:18    to_name             : None
+Mar 16 16:19:18    to_location         : Houston, TX
+Mar 16 16:19:18    all_to_numbers      : +17135740314
+Mar 16 16:19:18    all_to_names        : None
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    subject             : ''
+Mar 16 16:19:18    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    timestamp_utc       : 2026-03-16T16:19:06+00:00
+Mar 16 16:19:18    last_modified_utc   : 2026-03-16T16:19:09.982000+00:00
+Mar 16 16:19:18    sms_delivery_time   : None
+Mar 16 16:19:18    received_at_utc     : 2026-03-16T16:19:18.946714+00:00
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    account_id          : 315079026
+Mar 16 16:19:18    extension_id        : 2198226027
+Mar 16 16:19:18    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:18    conversation_id     : 3795807889906225217
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    read_status         : Read
+Mar 16 16:19:18    message_status      : Delivered
+Mar 16 16:19:18    delivery_error_code : None
+Mar 16 16:19:18    priority            : Normal
+Mar 16 16:19:18    availability        : Alive
+Mar 16 16:19:18    attachment_count    : 1
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631231852027
+Mar 16 16:19:18    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:18    rc_event_uuid       : 243940700347747135
+Mar 16 16:19:18  ----------------------------------------------------------------------
+Mar 16 16:19:18  
+Mar 16 16:19:18                   | event=zapier_payload_sending  message_id=3631231852027  direction=Outbound
+Mar 16 16:19:18  [16:19:18] INFO  | Sending payload to Zapier
+Mar 16 16:19:18                   | event=zapier_forward_attempt  message_id=3631231852027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+17135740314
+Mar 16 16:19:19  [16:19:19] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:19                   | event=zapier_forward_success  message_id=3631231852027  attempt=1  zapier_status_code=200
+Mar 16 16:19:20  [16:19:20] INFO  | RC webhook notification received
+Mar 16 16:19:20                   | event=rc_notification_received
+Mar 16 16:19:20  [16:19:20] INFO  | Telephony event received
+Mar 16 16:19:20                   | event=telephony_event_received
+Mar 16 16:19:20  [16:19:20] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:20                   | event=telephony_event_skipped
+Mar 16 16:19:20  [16:19:20] INFO  | RC webhook notification received
+Mar 16 16:19:20                   | event=rc_notification_received
+Mar 16 16:19:20  [16:19:20] INFO  | Telephony event received
+Mar 16 16:19:20                   | event=telephony_event_received
+Mar 16 16:19:20  [16:19:20] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:20                   | event=telephony_event_skipped
+Mar 16 16:19:20  [16:19:20] INFO  | RC webhook notification received
+Mar 16 16:19:20                   | event=rc_notification_received
+Mar 16 16:19:20  [16:19:20] INFO  | Telephony event received
+Mar 16 16:19:20                   | event=telephony_event_received
+Mar 16 16:19:20  [16:19:20] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:20                   | event=telephony_event_skipped
+Mar 16 16:19:24  [16:19:24] INFO  | Fetching call log entry from RC API
+Mar 16 16:19:24                   | event=rc_api_fetch_call_log  account_id=562216026
+Mar 16 16:19:24  [16:19:24] ERROR | RC API error fetching call log
+Mar 16 16:19:24                   | event=rc_call_log_api_error  status_code=429
+Mar 16 16:19:24  [16:19:24] WARN  | Call log fetch failed (attempt 3/3) — will retry
+Mar 16 16:19:24                   | event=call_summary_fetch_failed  attempt=3
+Mar 16 16:19:24  [16:19:24] WARN  | AI notes not available after 3 attempt(s) — using fallback
+Mar 16 16:19:24                   | event=call_summary_notes_unavailable
+Mar 16 16:19:24  [16:19:24] INFO  | Sending call summary to Logics:
+Mar 16 16:19:24  
+Mar 16 16:19:24                       --- CALL SUMMARY PAYLOAD ---                     
+Mar 16 16:19:24    subject             : RingCentral Call Summary By: 1a. Customer Service Department (CS3)
+Mar 16 16:19:24  ----------------------------------------------------------------------
+Mar 16 16:19:24    call_id             : s-a78602518ce7bz19cf76c1525z239d42a0000
+Mar 16 16:19:24    call_direction      : Inbound
+Mar 16 16:19:24    agent_name          : 1a. Customer Service Department (CS3)
+Mar 16 16:19:24    agent_number        : +18882350004
+Mar 16 16:19:24    caller_number       : +19046031384
+Mar 16 16:19:24    caller_name         : 18882350004 - 1a. Customer Service Department (CS3)
+Mar 16 16:19:24  ----------------------------------------------------------------------
+Mar 16 16:19:24    call_duration       : Nones
+Mar 16 16:19:24    call_datetime_utc   : None
+Mar 16 16:19:24    notes_retry         : True
+Mar 16 16:19:24  ----------------------------------------------------------------------
+Mar 16 16:19:24    body (notes)        : '(AI notes not available)'
+Mar 16 16:19:24  
+Mar 16 16:19:24  [16:19:24] INFO  | Call summary POSTed to Logics successfully
+Mar 16 16:19:24                   | event=call_summary_sent
+Mar 16 16:19:25  [16:19:25] INFO  | RC webhook notification received
+Mar 16 16:19:25                   | event=rc_notification_received
+Mar 16 16:19:25  [16:19:25] INFO  | Telephony event received
+Mar 16 16:19:25                   | event=telephony_event_received
+Mar 16 16:19:25  [16:19:25] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:25                   | event=telephony_event_skipped
+Mar 16 16:19:25  [16:19:25] INFO  | RC webhook notification received
+Mar 16 16:19:25                   | event=rc_notification_received
+Mar 16 16:19:25  [16:19:25] INFO  | Telephony event received
+Mar 16 16:19:25                   | event=telephony_event_received
+Mar 16 16:19:25  [16:19:25] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:25                   | event=telephony_event_skipped
+Mar 16 16:19:26  [16:19:26] INFO  | RC webhook notification received
+Mar 16 16:19:26                   | event=rc_notification_received
+Mar 16 16:19:26  [16:19:26] INFO  | Telephony event received
+Mar 16 16:19:26                   | event=telephony_event_received
+Mar 16 16:19:26  [16:19:26] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:26                   | event=telephony_event_skipped
+Mar 16 16:19:26  [16:19:26] INFO  | RC webhook notification received
+Mar 16 16:19:26                   | event=rc_notification_received
+Mar 16 16:19:26  [16:19:26] INFO  | Telephony event received
+Mar 16 16:19:26                   | event=telephony_event_received
+Mar 16 16:19:26  [16:19:26] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:26                   | event=telephony_event_skipped
+Mar 16 16:19:26  [16:19:26] INFO  | RC webhook notification received
+Mar 16 16:19:26                   | event=rc_notification_received
+Mar 16 16:19:26  [16:19:26] INFO  | Telephony event received
+Mar 16 16:19:26                   | event=telephony_event_received
+Mar 16 16:19:26  [16:19:26] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:26                   | event=telephony_event_skipped
+Mar 16 16:19:27  [16:19:27] INFO  | RC webhook notification received
+Mar 16 16:19:27                   | event=rc_notification_received
+Mar 16 16:19:27  [16:19:27] INFO  | Telephony event received
+Mar 16 16:19:27                   | event=telephony_event_received
+Mar 16 16:19:27  [16:19:27] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:27                   | event=telephony_event_skipped
+Mar 16 16:19:28  [16:19:28] INFO  | RC webhook notification received
+Mar 16 16:19:28                   | event=rc_notification_received
+Mar 16 16:19:28  [16:19:28] INFO  | No new SMS message IDs in notification
+Mar 16 16:19:28                   | event=no_sms_messages
+Mar 16 16:19:28  [16:19:28] INFO  | RC webhook notification received
+Mar 16 16:19:28                   | event=rc_notification_received
+Mar 16 16:19:28  [16:19:28] INFO  | Processing SMS notification
+Mar 16 16:19:28                   | event=processing_notification  account_id=315079026  extension_id=2198226027  new_message_ids=['3631232093027', '3631232248027', '3631232623027', '3631232521027', '3631232407027']  message_count=5
+Mar 16 16:19:28  [16:19:28] INFO  | Fetching message from RC API
+Mar 16 16:19:28                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631232093027
+Mar 16 16:19:28  [16:19:28] INFO  | Fetching message from RC API
+Mar 16 16:19:28                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631232248027
+Mar 16 16:19:28  [16:19:28] INFO  | Fetching message from RC API
+Mar 16 16:19:28                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631232623027
+Mar 16 16:19:28  [16:19:28] INFO  | Fetching message from RC API
+Mar 16 16:19:28                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631232521027
+Mar 16 16:19:28  [16:19:28] INFO  | Fetching message from RC API
+Mar 16 16:19:28                   | event=rc_api_fetch_message  account_id=315079026  extension_id=2198226027  message_id=3631232407027
+Mar 16 16:19:28  [16:19:28] INFO  | RC message fetched successfully
+Mar 16 16:19:28                   | event=rc_message_fetched  message_id=3631232407027  direction=Outbound
+Mar 16 16:19:28  [16:19:28] INFO  | RC message fetched successfully
+Mar 16 16:19:28                   | event=rc_message_fetched  message_id=3631232248027  direction=Outbound
+Mar 16 16:19:28  [16:19:28] INFO  | RC message fetched successfully
+Mar 16 16:19:28                   | event=rc_message_fetched  message_id=3631232623027  direction=Outbound
+Mar 16 16:19:28  [16:19:28] INFO  | RC message fetched successfully
+Mar 16 16:19:28                   | event=rc_message_fetched  message_id=3631232093027  direction=Outbound
+Mar 16 16:19:28  [16:19:28] INFO  | RC message fetched successfully
+Mar 16 16:19:28                   | event=rc_message_fetched  message_id=3631232521027  direction=Outbound
+Mar 16 16:19:28  [16:19:28] INFO  | Sending to Zapier:
+Mar 16 16:19:28  
+Mar 16 16:19:28  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:28    source              : ringcentral
+Mar 16 16:19:28    event_type          : outbound_sms
+Mar 16 16:19:28    message_id          : 3631232093027
+Mar 16 16:19:28    message_type        : SMS
+Mar 16 16:19:28    direction           : Outbound
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    from_number         : +19499662028
+Mar 16 16:19:28    from_name           : Mark Baylon
+Mar 16 16:19:28    from_location       : Irvine, CA
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    to_number           : +14438347712
+Mar 16 16:19:28    to_name             : None
+Mar 16 16:19:28    to_location         : None
+Mar 16 16:19:28    all_to_numbers      : +14438347712
+Mar 16 16:19:28    all_to_names        : None
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    subject             : ''
+Mar 16 16:19:28    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    timestamp_utc       : 2026-03-16T16:19:11+00:00
+Mar 16 16:19:28    last_modified_utc   : 2026-03-16T16:19:14.562000+00:00
+Mar 16 16:19:28    sms_delivery_time   : None
+Mar 16 16:19:28    received_at_utc     : 2026-03-16T16:19:28.751910+00:00
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    account_id          : 315079026
+Mar 16 16:19:28    extension_id        : 2198226027
+Mar 16 16:19:28    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:28    conversation_id     : 7762921412640372297
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    read_status         : Read
+Mar 16 16:19:28    message_status      : Delivered
+Mar 16 16:19:28    delivery_error_code : None
+Mar 16 16:19:28    priority            : Normal
+Mar 16 16:19:28    availability        : Alive
+Mar 16 16:19:28    attachment_count    : 1
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631232093027
+Mar 16 16:19:28    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:28    rc_event_uuid       : 6808016640100954258
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28  
+Mar 16 16:19:28                   | event=zapier_payload_sending  message_id=3631232093027  direction=Outbound
+Mar 16 16:19:28  [16:19:28] INFO  | Sending payload to Zapier
+Mar 16 16:19:28                   | event=zapier_forward_attempt  message_id=3631232093027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+14438347712
+Mar 16 16:19:28  [16:19:28] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:28                   | event=zapier_forward_success  message_id=3631232093027  attempt=1  zapier_status_code=200
+Mar 16 16:19:28  [16:19:28] INFO  | Sending to Zapier:
+Mar 16 16:19:28  
+Mar 16 16:19:28  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:28    source              : ringcentral
+Mar 16 16:19:28    event_type          : outbound_sms
+Mar 16 16:19:28    message_id          : 3631232248027
+Mar 16 16:19:28    message_type        : SMS
+Mar 16 16:19:28    direction           : Outbound
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    from_number         : +19499662028
+Mar 16 16:19:28    from_name           : Mark Baylon
+Mar 16 16:19:28    from_location       : Irvine, CA
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    to_number           : +19174978110
+Mar 16 16:19:28    to_name             : None
+Mar 16 16:19:28    to_location         : None
+Mar 16 16:19:28    all_to_numbers      : +19174978110
+Mar 16 16:19:28    all_to_names        : None
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    subject             : ''
+Mar 16 16:19:28    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    timestamp_utc       : 2026-03-16T16:19:13+00:00
+Mar 16 16:19:28    last_modified_utc   : 2026-03-16T16:19:16.046000+00:00
+Mar 16 16:19:28    sms_delivery_time   : None
+Mar 16 16:19:28    received_at_utc     : 2026-03-16T16:19:28.834207+00:00
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    account_id          : 315079026
+Mar 16 16:19:28    extension_id        : 2198226027
+Mar 16 16:19:28    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:28    conversation_id     : 9169921112269289229
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    read_status         : Read
+Mar 16 16:19:28    message_status      : Delivered
+Mar 16 16:19:28    delivery_error_code : None
+Mar 16 16:19:28    priority            : Normal
+Mar 16 16:19:28    availability        : Alive
+Mar 16 16:19:28    attachment_count    : 1
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631232248027
+Mar 16 16:19:28    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:28    rc_event_uuid       : 6808016640100954258
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28  
+Mar 16 16:19:28                   | event=zapier_payload_sending  message_id=3631232248027  direction=Outbound
+Mar 16 16:19:28  [16:19:28] INFO  | Sending payload to Zapier
+Mar 16 16:19:28                   | event=zapier_forward_attempt  message_id=3631232248027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+19174978110
+Mar 16 16:19:28  [16:19:28] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:28                   | event=zapier_forward_success  message_id=3631232248027  attempt=1  zapier_status_code=200
+Mar 16 16:19:28  [16:19:28] INFO  | Sending to Zapier:
+Mar 16 16:19:28  
+Mar 16 16:19:28  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:28    source              : ringcentral
+Mar 16 16:19:28    event_type          : outbound_sms
+Mar 16 16:19:28    message_id          : 3631232623027
+Mar 16 16:19:28    message_type        : SMS
+Mar 16 16:19:28    direction           : Outbound
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    from_number         : +19499662028
+Mar 16 16:19:28    from_name           : Mark Baylon
+Mar 16 16:19:28    from_location       : Irvine, CA
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    to_number           : +15595794231
+Mar 16 16:19:28    to_name             : None
+Mar 16 16:19:28    to_location         : Fresno, CA
+Mar 16 16:19:28    all_to_numbers      : +15595794231
+Mar 16 16:19:28    all_to_names        : None
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    subject             : ''
+Mar 16 16:19:28    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    timestamp_utc       : 2026-03-16T16:19:21+00:00
+Mar 16 16:19:28    last_modified_utc   : 2026-03-16T16:19:28.460000+00:00
+Mar 16 16:19:28    sms_delivery_time   : None
+Mar 16 16:19:28    received_at_utc     : 2026-03-16T16:19:28.905692+00:00
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    account_id          : 315079026
+Mar 16 16:19:28    extension_id        : 2198226027
+Mar 16 16:19:28    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:28    conversation_id     : 8760234445478866928
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    read_status         : Read
+Mar 16 16:19:28    message_status      : Delivered
+Mar 16 16:19:28    delivery_error_code : None
+Mar 16 16:19:28    priority            : Normal
+Mar 16 16:19:28    availability        : Alive
+Mar 16 16:19:28    attachment_count    : 1
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631232623027
+Mar 16 16:19:28    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:28    rc_event_uuid       : 6808016640100954258
+Mar 16 16:19:28  ----------------------------------------------------------------------
+Mar 16 16:19:28  
+Mar 16 16:19:28                   | event=zapier_payload_sending  message_id=3631232623027  direction=Outbound
+Mar 16 16:19:28  [16:19:28] INFO  | Sending payload to Zapier
+Mar 16 16:19:28                   | event=zapier_forward_attempt  message_id=3631232623027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+15595794231
+Mar 16 16:19:28  [16:19:28] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:28                   | event=zapier_forward_success  message_id=3631232623027  attempt=1  zapier_status_code=200
+Mar 16 16:19:29  [16:19:29] INFO  | Sending to Zapier:
+Mar 16 16:19:29  
+Mar 16 16:19:29  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:29    source              : ringcentral
+Mar 16 16:19:29    event_type          : outbound_sms
+Mar 16 16:19:29    message_id          : 3631232521027
+Mar 16 16:19:29    message_type        : SMS
+Mar 16 16:19:29    direction           : Outbound
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    from_number         : +19499662028
+Mar 16 16:19:29    from_name           : Mark Baylon
+Mar 16 16:19:29    from_location       : Irvine, CA
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    to_number           : +12298349924
+Mar 16 16:19:29    to_name             : None
+Mar 16 16:19:29    to_location         : None
+Mar 16 16:19:29    all_to_numbers      : +12298349924
+Mar 16 16:19:29    all_to_names        : None
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    subject             : ''
+Mar 16 16:19:29    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    timestamp_utc       : 2026-03-16T16:19:18+00:00
+Mar 16 16:19:29    last_modified_utc   : 2026-03-16T16:19:21.675000+00:00
+Mar 16 16:19:29    sms_delivery_time   : None
+Mar 16 16:19:29    received_at_utc     : 2026-03-16T16:19:28.984898+00:00
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    account_id          : 315079026
+Mar 16 16:19:29    extension_id        : 2198226027
+Mar 16 16:19:29    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:29    conversation_id     : 230136624829111570
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    read_status         : Read
+Mar 16 16:19:29    message_status      : Delivered
+Mar 16 16:19:29    delivery_error_code : None
+Mar 16 16:19:29    priority            : Normal
+Mar 16 16:19:29    availability        : Alive
+Mar 16 16:19:29    attachment_count    : 1
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631232521027
+Mar 16 16:19:29    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:29    rc_event_uuid       : 6808016640100954258
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29  
+Mar 16 16:19:29                   | event=zapier_payload_sending  message_id=3631232521027  direction=Outbound
+Mar 16 16:19:29  [16:19:29] INFO  | Sending payload to Zapier
+Mar 16 16:19:29                   | event=zapier_forward_attempt  message_id=3631232521027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+12298349924
+Mar 16 16:19:29  [16:19:29] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:29                   | event=zapier_forward_success  message_id=3631232521027  attempt=1  zapier_status_code=200
+Mar 16 16:19:29  [16:19:29] INFO  | Sending to Zapier:
+Mar 16 16:19:29  
+Mar 16 16:19:29  ------------------- ZAPIER PAYLOAD -- OUTBOUND_SMS -------------------
+Mar 16 16:19:29    source              : ringcentral
+Mar 16 16:19:29    event_type          : outbound_sms
+Mar 16 16:19:29    message_id          : 3631232407027
+Mar 16 16:19:29    message_type        : SMS
+Mar 16 16:19:29    direction           : Outbound
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    from_number         : +19499662028
+Mar 16 16:19:29    from_name           : Mark Baylon
+Mar 16 16:19:29    from_location       : Irvine, CA
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    to_number           : +14064387523
+Mar 16 16:19:29    to_name             : None
+Mar 16 16:19:29    to_location         : Helena, MT
+Mar 16 16:19:29    all_to_numbers      : +14064387523
+Mar 16 16:19:29    all_to_names        : None
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    subject             : ''
+Mar 16 16:19:29    body                : "Good morning, it's Mark from Clear Start Tax. We couldn't process your payment. Please reply with:\n1. Re-run payment\n2. Update payment method (you can send your new info here or give us a call if you prefer)\nThank you."
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    timestamp_utc       : 2026-03-16T16:19:16+00:00
+Mar 16 16:19:29    last_modified_utc   : 2026-03-16T16:19:19.750000+00:00
+Mar 16 16:19:29    sms_delivery_time   : None
+Mar 16 16:19:29    received_at_utc     : 2026-03-16T16:19:29.059627+00:00
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    account_id          : 315079026
+Mar 16 16:19:29    extension_id        : 2198226027
+Mar 16 16:19:29    subscription_id     : 64a5134b-6e52-4202-b2f5-bcc4ab87d72f
+Mar 16 16:19:29    conversation_id     : 6696626827390382632
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    read_status         : Read
+Mar 16 16:19:29    message_status      : Delivered
+Mar 16 16:19:29    delivery_error_code : None
+Mar 16 16:19:29    priority            : Normal
+Mar 16 16:19:29    availability        : Alive
+Mar 16 16:19:29    attachment_count    : 1
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29    message_uri         : https://platform.ringcentral.com/restapi/v1.0/account/315079026/extension/2198226027/message-store/3631232407027
+Mar 16 16:19:29    rc_event_type       : /restapi/v1.0/account/315079026/extension/2198226027/message-store
+Mar 16 16:19:29    rc_event_uuid       : 6808016640100954258
+Mar 16 16:19:29  ----------------------------------------------------------------------
+Mar 16 16:19:29  
+Mar 16 16:19:29                   | event=zapier_payload_sending  message_id=3631232407027  direction=Outbound
+Mar 16 16:19:29  [16:19:29] INFO  | Sending payload to Zapier
+Mar 16 16:19:29                   | event=zapier_forward_attempt  message_id=3631232407027  attempt=1  max_retries=3  from_number=+19499662028  to_number=+14064387523
+Mar 16 16:19:29  [16:19:29] INFO  | Zapier webhook accepted payload
+Mar 16 16:19:29                   | event=zapier_forward_success  message_id=3631232407027  attempt=1  zapier_status_code=200
+Mar 16 16:19:29  [16:19:29] INFO  | RC webhook notification received
+Mar 16 16:19:29                   | event=rc_notification_received
+Mar 16 16:19:29  [16:19:29] INFO  | Telephony event received
+Mar 16 16:19:29                   | event=telephony_event_received
+Mar 16 16:19:29  [16:19:29] INFO  | Telephony event is not call-ended — skipping
+Mar 16 16:19:29                   | event=telephony_event_skipped
