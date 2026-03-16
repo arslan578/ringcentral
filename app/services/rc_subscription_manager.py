@@ -264,8 +264,23 @@ class RCSubscriptionManager:
                 sub_id = matching.get("id", "")
 
                 if sub_status == "active":
-                    # Check if it needs renewal
-                    if self._needs_renewal(matching):
+                    # ── Check if subscription filters are up-to-date ──
+                    # If we added new event filters (e.g. telephony/sessions)
+                    # but the active subscription was created before they existed,
+                    # we MUST delete and recreate so RC sends the new events.
+                    if self._filters_are_stale(matching):
+                        logger.warning(
+                            "Subscription filters are STALE — deleting and "
+                            "recreating with updated event filters",
+                            extra={
+                                "event": "subscription_filters_stale",
+                                "subscription_id": sub_id,
+                                "missing_filters": self._get_missing_filters(matching),
+                            },
+                        )
+                        await self._delete_subscription(sub_id)
+                        await self._create_subscription()
+                    elif self._needs_renewal(matching):
                         logger.info(
                             "Subscription needs renewal",
                             extra={
@@ -417,6 +432,44 @@ class RCSubscriptionManager:
             if address == self._delivery_url:
                 matches.append(sub)
         return matches
+
+    # ── Filter freshness detection ───────────────────────────────
+
+    # These suffixes MUST appear in at least one event filter in the
+    # active subscription.  If any is missing, the subscription is stale.
+    _REQUIRED_FILTER_SUFFIXES: list[str] = [
+        "message-store",
+        "telephony/sessions",
+    ]
+
+    def _filters_are_stale(self, subscription: dict[str, Any]) -> bool:
+        """
+        Return True if the subscription is missing any required event filter.
+
+        Example: an old subscription has only message-store filters.
+        After we added telephony/sessions in code, we detect that the
+        live subscription is missing it → stale → needs recreation.
+        """
+        existing_filters: list[str] = subscription.get("eventFilters", []) or []
+        return len(self._get_missing_filters(subscription)) > 0
+
+    def _get_missing_filters(self, subscription: dict[str, Any]) -> list[str]:
+        """Return the list of required filter suffixes that are NOT present."""
+        existing_filters: list[str] = subscription.get("eventFilters", []) or []
+
+        # Normalise: strip query params for comparison
+        normalised = []
+        for f in existing_filters:
+            clean = f.split("?")[0].rstrip("/")
+            normalised.append(clean)
+
+        missing: list[str] = []
+        for suffix in self._REQUIRED_FILTER_SUFFIXES:
+            # Check if ANY existing filter ends with this suffix
+            found = any(n.endswith(suffix) for n in normalised)
+            if not found:
+                missing.append(suffix)
+        return missing
 
     def _needs_renewal(self, subscription: dict[str, Any]) -> bool:
         """Check if a subscription needs renewal (close to expiration)."""
