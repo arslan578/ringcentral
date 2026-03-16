@@ -26,6 +26,7 @@ from app.api.v1.router import api_v1_router
 from app.config import get_settings
 from app.core.idempotency import IdempotencyCache
 from app.core.logging import setup_logging
+from app.services.call_summary_handler import CallSummaryHandler
 from app.services.rc_api_client import RCApiClient
 from app.services.rc_subscription_manager import RCSubscriptionManager
 from app.services.redaction import SensitiveDataRedactor
@@ -91,6 +92,13 @@ async def lifespan(app: FastAPI):
         redact_financial_data=settings.redact_financial_data,
         fuzzy_match=settings.redact_fuzzy_match,
         fuzzy_threshold=settings.redact_fuzzy_threshold,
+    )
+
+    # Call summary handler — processes call-ended events and POSTs AI notes
+    app.state.call_summary_handler = CallSummaryHandler(
+        rc_api=app.state.rc_api_client,
+        http_client=http_client,
+        logics_url=settings.logics_webhook_url,
     )
 
     # ── Subscription auto-management ────────────────────────────

@@ -135,7 +135,10 @@ class RCSubscriptionManager:
             return self._explicit_filters
 
         if not self._company_wide:
-            return ["/restapi/v1.0/account/~/extension/~/message-store"]
+            return [
+                "/restapi/v1.0/account/~/extension/~/message-store",
+                "/restapi/v1.0/account/~/extension/~/telephony/sessions",
+            ]
 
         # ── Company-wide: list all extensions ──────────────────────
         logger.info(
@@ -150,7 +153,10 @@ class RCSubscriptionManager:
                 "No extensions found -- falling back to current user only",
                 extra={"event": "no_extensions_found_fallback"},
             )
-            return ["/restapi/v1.0/account/~/extension/~/message-store"]
+            return [
+                "/restapi/v1.0/account/~/extension/~/message-store",
+                "/restapi/v1.0/account/~/extension/~/telephony/sessions",
+            ]
 
         # Build filters for extensions that can have SMS
         # Include: User, DigitalUser, VirtualUser, Department
@@ -183,12 +189,21 @@ class RCSubscriptionManager:
                     "total_extensions": len(extensions),
                 },
             )
-            return ["/restapi/v1.0/account/~/extension/~/message-store"]
+            return [
+                "/restapi/v1.0/account/~/extension/~/message-store",
+                "/restapi/v1.0/account/~/extension/~/telephony/sessions",
+            ]
 
         # Always include the current user's extension as a safety net
         current_user_filter = "/restapi/v1.0/account/~/extension/~/message-store"
         if current_user_filter not in filters:
             filters.append(current_user_filter)
+
+        # ── Call-Ended Events (telephony/sessions) ────────────────
+        # In company-wide mode, a single account-level filter captures all calls
+        call_events_filter = "/restapi/v1.0/account/~/telephony/sessions"
+        if call_events_filter not in filters:
+            filters.append(call_events_filter)
 
         self.status.monitored_extensions = len(filters)
 

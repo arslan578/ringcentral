@@ -82,6 +82,10 @@ class Settings(BaseSettings):
         ...,
         description="Zapier URL for OUTBOUND SMS. Required.",
     )
+    logics_webhook_url: str = Field(
+        default="",
+        description="Logics endpoint URL for call summary POSTs (call-ended AI notes).",
+    )
 
     # ── Retry / Reliability ────────────────────────────────────────
     zapier_max_retries: int = Field(default=3, ge=1, le=10)
