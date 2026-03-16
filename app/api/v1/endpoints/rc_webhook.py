@@ -260,24 +260,59 @@ async def rc_webhook_receiver(
         extra={
             "event": "rc_notification_received",
             "raw_body_keys": list(raw_body.keys()),
+            "rc_event_path": raw_body.get("event", "(none)"),
+            "rc_subscription_id": raw_body.get("subscriptionId", "(none)"),
         },
     )
 
     # ── Step 2a: Route call-ended events to the CallSummaryHandler ─────
-    # RC telephony/sessions events have a different event path from
-    # message-store events.  They are mutually exclusive — handle
-    # call-ended events first, then fall through to SMS logic.
+    # RC sends a telephony/sessions webhook for EVERY status change:
+    #   Proceeding → Answered → Hold → Disconnected
+    # We only want "Disconnected" (= call ended). All others are skipped.
     event_path: str = raw_body.get("event", "") or ""
     if "/telephony/sessions" in event_path:
+        body = raw_body.get("body", {}) or {}
+        parties = body.get("parties", []) or []
+
+        # Extract all party status codes from the event
+        party_statuses = [
+            (p.get("status") or {}).get("code", "")
+            for p in parties
+            if isinstance(p, dict)
+        ]
+
         logger.info(
-            "Call-ended event detected — routing to CallSummaryHandler",
+            "Telephony event received",
             extra={
-                "event": "call_ended_event_detected",
+                "event": "telephony_event_received",
                 "rc_event_path": event_path,
+                "party_statuses": party_statuses,
+                "session_id": body.get("telephonySessionId")
+                              or body.get("sessionId", ""),
             },
         )
-        result = await call_summary_handler.handle(raw_body)
-        return {"status": "call_summary_processed", "detail": result}
+
+        # Only process when at least one party is Disconnected
+        if any(s == "Disconnected" for s in party_statuses):
+            logger.info(
+                "Call-ended (Disconnected) detected — routing to CallSummaryHandler",
+                extra={
+                    "event": "call_ended_event_detected",
+                    "rc_event_path": event_path,
+                    "party_statuses": party_statuses,
+                },
+            )
+            result = await call_summary_handler.handle(raw_body)
+            return {"status": "call_summary_processed", "detail": result}
+        else:
+            logger.info(
+                "Telephony event is not call-ended — skipping",
+                extra={
+                    "event": "telephony_event_skipped",
+                    "party_statuses": party_statuses,
+                },
+            )
+            return {"status": "telephony_event_skipped", "party_statuses": party_statuses}
 
     # ── Step 3: Parse into RCWebhookEvent (SMS path) ────────────────
     try:

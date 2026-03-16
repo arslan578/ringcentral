@@ -629,3 +629,109 @@ def test_sms_notification_still_forwarded_after_feature_added(app, client: TestC
     assert sms_forwarder.send.call_count == 1
     # Logics endpoint WAS NOT called (not a call-ended event)
     mock_http.post.assert_not_called()
+
+
+# ─────────────────────────────────────────────────────────────────
+# Telephony status filtering tests
+# ─────────────────────────────────────────────────────────────────
+
+# Payload where the call is ringing (not ended yet)
+RC_CALL_RINGING_PAYLOAD = {
+    "uuid": "call-uuid-ring",
+    "event": "/restapi/v1.0/account/315079026/telephony/sessions",
+    "timestamp": "2026-03-14T17:00:01.000Z",
+    "subscriptionId": "7fd32175-9666-4dbc-9c7b-2af4c4f66cab",
+    "ownerId": "315079026",
+    "body": {
+        "accountId": "315079026",
+        "telephonySessionId": "s-call-session-abc123",
+        "sessionId": "s-call-session-abc123",
+        "parties": [
+            {
+                "accountId": "315079026",
+                "extensionId": "2582602027",
+                "id": "party-agent-001",
+                "direction": "Inbound",
+                "status": {"code": "Proceeding"},
+                "from": {"phoneNumber": "+15550001111", "name": "John Doe"},
+                "to": {"phoneNumber": "+15559990000", "name": "Jane Smith"},
+            }
+        ],
+    },
+}
+
+# Payload where the call is answered/connected (not ended yet)
+RC_CALL_ANSWERED_PAYLOAD = {
+    "uuid": "call-uuid-answered",
+    "event": "/restapi/v1.0/account/315079026/telephony/sessions",
+    "timestamp": "2026-03-14T17:00:02.000Z",
+    "subscriptionId": "7fd32175-9666-4dbc-9c7b-2af4c4f66cab",
+    "ownerId": "315079026",
+    "body": {
+        "accountId": "315079026",
+        "telephonySessionId": "s-call-session-abc123",
+        "sessionId": "s-call-session-abc123",
+        "parties": [
+            {
+                "accountId": "315079026",
+                "extensionId": "2582602027",
+                "id": "party-agent-001",
+                "direction": "Inbound",
+                "status": {"code": "Answered"},
+                "from": {"phoneNumber": "+15550001111", "name": "John Doe"},
+                "to": {"phoneNumber": "+15559990000", "name": "Jane Smith"},
+            }
+        ],
+    },
+}
+
+
+def test_ringing_event_is_skipped(app, client: TestClient):
+    """Telephony event with Proceeding (ringing) should be skipped, NOT sent to Logics."""
+    _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
+
+    response = client.post(
+        "/api/v1/rc/webhook",
+        json=RC_CALL_RINGING_PAYLOAD,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "telephony_event_skipped"
+    # Handler was NOT called (no Logics POST)
+    mock_http.post.assert_not_called()
+
+
+def test_answered_event_is_skipped(app, client: TestClient):
+    """Telephony event with Answered should be skipped, NOT sent to Logics."""
+    _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
+
+    response = client.post(
+        "/api/v1/rc/webhook",
+        json=RC_CALL_ANSWERED_PAYLOAD,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "telephony_event_skipped"
+    mock_http.post.assert_not_called()
+
+
+def test_disconnected_event_is_processed(app, client: TestClient):
+    """Only Disconnected status triggers the full call summary handler."""
+    _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
+
+    response = client.post(
+        "/api/v1/rc/webhook",
+        json=RC_CALL_ENDED_PAYLOAD,  # Has status: Disconnected
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "call_summary_processed"
+    # Logics POST WAS made
+    assert mock_http.post.call_count == 1
+
