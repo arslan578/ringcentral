@@ -6,10 +6,11 @@ Handles the RingCentral telephony call-ended event.
 Flow:
   1. Receive the raw call-ended webhook payload (already parsed as dict).
   2. Extract call_id (telephonySessionId) and the agent identity.
-  3. Call the RC Call Log API to fetch AI notes for that call.
-  4. If notes are not yet ready (AI takes time), wait 30 seconds and retry once.
-  5. Build a CallSummaryPayload and POST it to the Logics endpoint.
-  6. Always return (never raise) — log errors and carry on.
+  3. Wait a short period for the call log to become available in RC.
+  4. Call the RC Call Log API to fetch AI notes for that call.
+  5. If notes are not yet ready (AI takes time), retry with backoff.
+  6. Build a CallSummaryPayload and POST it to the Logics endpoint.
+  7. Always return (never raise) — log errors and carry on.
 
 This handler runs ALONGSIDE the existing SMS webhook logic, not instead of it.
 A call-ended event has a different event path from an SMS notification, so the
@@ -23,6 +24,12 @@ RC Call Log API:
 
 Notes field location in call log:
   call_log.notes  (string, may be absent if AI hasn't finished processing)
+
+Retry strategy:
+  - Wait 10s before the first fetch (call log needs time to appear)
+  - If notes are empty or API returns 429, wait 30s then retry
+  - If still empty / 429, wait 60s then do a final retry
+  - If still no notes after 3 attempts, send fallback "(AI notes not available)"
 """
 from __future__ import annotations
 
@@ -37,8 +44,44 @@ from app.services.rc_api_client import RCApiClient
 
 logger = logging.getLogger(__name__)
 
-# How long to wait before retrying if AI notes aren't ready yet
-_NOTES_RETRY_DELAY_SECONDS = 30
+# Retry schedule: delays before each fetch attempt (seconds)
+# Attempt 1: wait 10s  (call log needs time to appear after disconnect)
+# Attempt 2: wait 30s  (AI notes may still be processing)
+# Attempt 3: wait 60s  (final attempt with longer wait)
+_DEFAULT_RETRY_SCHEDULE: list[float] = [10.0, 30.0, 60.0]
+
+# RC "queue" / IVR extension names that should NOT be used as the agent name.
+# If ANY of these appear as a substring in the name (case-insensitive), it's
+# considered a non-agent name.
+_NON_AGENT_NAME_KEYWORDS: list[str] = [
+    "main company number", "company number", "main number",
+    "ivr", "auto receptionist", "auto-receptionist",
+    "department", "queue", "call queue",
+    "hold", "parking", "park location",
+    "announcement", "paging",
+]
+
+
+def _is_real_agent_name(name: Optional[str]) -> bool:
+    """
+    Return True if the name looks like a real person, not an IVR/queue.
+
+    Examples of NON-agent names:
+      "Main Company Number", "1d. Billing Department", "Auto Receptionist"
+    """
+    if not name:
+        return False
+
+    lower = name.strip().lower()
+    if not lower:
+        return False
+
+    # If any non-agent keyword appears anywhere in the name, it's not a real agent
+    for keyword in _NON_AGENT_NAME_KEYWORDS:
+        if keyword in lower:
+            return False
+
+    return True
 
 
 def _extract_call_info(raw_body: dict[str, Any]) -> tuple[str, str, Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], Optional[int], Optional[str]]:
@@ -96,37 +139,49 @@ def _extract_call_info(raw_body: dict[str, Any]) -> tuple[str, str, Optional[str
     caller_name: Optional[str] = None
     call_direction: Optional[str] = None
 
+    # First pass: find a party with extensionId whose name is a real person
     for party in parties:
+        if not party.get("extensionId"):
+            continue
+
         direction = party.get("direction", "")
         from_info = party.get("from") or {}
         to_info = party.get("to") or {}
 
-        # The RC agent is the party with an extensionId
-        if party.get("extensionId"):
-            # This is the internal RC user (agent)
-            call_direction = direction
+        if direction == "Inbound":
+            candidate_name = to_info.get("name") or party.get("name")
+            candidate_number = (
+                to_info.get("phoneNumber")
+                or to_info.get("extensionNumber")
+                or str(party.get("extensionId", ""))
+            )
+            ext_caller_number = from_info.get("phoneNumber") or from_info.get("extensionNumber")
+            ext_caller_name = from_info.get("name")
+        else:
+            candidate_name = from_info.get("name") or party.get("name")
+            candidate_number = (
+                from_info.get("phoneNumber")
+                or from_info.get("extensionNumber")
+                or str(party.get("extensionId", ""))
+            )
+            ext_caller_number = to_info.get("phoneNumber") or to_info.get("extensionNumber")
+            ext_caller_name = to_info.get("name")
 
-            if direction == "Inbound":
-                # Agent is the "to" side; caller is "from"
-                agent_name = to_info.get("name") or party.get("name")
-                agent_number = (
-                    to_info.get("phoneNumber")
-                    or to_info.get("extensionNumber")
-                    or str(party.get("extensionId", ""))
-                )
-                caller_number = from_info.get("phoneNumber") or from_info.get("extensionNumber")
-                caller_name = from_info.get("name")
-            else:
-                # Outbound — agent is the "from" side
-                agent_name = from_info.get("name") or party.get("name")
-                agent_number = (
-                    from_info.get("phoneNumber")
-                    or from_info.get("extensionNumber")
-                    or str(party.get("extensionId", ""))
-                )
-                caller_number = to_info.get("phoneNumber") or to_info.get("extensionNumber")
-                caller_name = to_info.get("name")
+        # Prefer a real agent name over IVR/queue names
+        if _is_real_agent_name(candidate_name):
+            agent_name = candidate_name
+            agent_number = candidate_number
+            caller_number = ext_caller_number
+            caller_name = ext_caller_name
+            call_direction = direction
             break
+        elif not agent_name:
+            # Keep as fallback if no better candidate found
+            agent_name = candidate_name
+            agent_number = candidate_number
+            caller_number = ext_caller_number
+            caller_name = ext_caller_name
+            call_direction = direction
 
     # Fallback: if no extensionId found, use first party
     if not agent_name and parties:
@@ -196,12 +251,12 @@ class CallSummaryHandler:
         rc_api: RCApiClient,
         http_client: httpx.AsyncClient,
         logics_url: str,
-        notes_retry_delay: float = _NOTES_RETRY_DELAY_SECONDS,
+        retry_schedule: list[float] | None = None,
     ) -> None:
         self._rc_api = rc_api
         self._http = http_client
         self._logics_url = logics_url
-        self._notes_retry_delay = notes_retry_delay
+        self._retry_schedule = retry_schedule if retry_schedule is not None else _DEFAULT_RETRY_SCHEDULE
 
     async def handle(self, raw_body: dict[str, Any]) -> dict[str, Any]:
         """
@@ -209,10 +264,9 @@ class CallSummaryHandler:
 
         Steps:
           1. Extract call_id and agent info from the payload.
-          2. Fetch the call log entry (which may contain AI notes).
-          3. If notes are empty, wait and retry once after a delay.
-          4. Build CallSummaryPayload and POST to Logics endpoint.
-          5. Return a status dict (never raises — errors are logged).
+          2. Fetch the call log entry with retries and backoff.
+          3. Build CallSummaryPayload and POST to Logics endpoint.
+          4. Return a status dict (never raises — errors are logged).
 
         Args:
             raw_body: The full decoded webhook request body dict.
@@ -250,42 +304,81 @@ class CallSummaryHandler:
             },
         )
 
-        # ── Step 2: Fetch call log with AI notes ─────────────────
-        call_log = await self._rc_api.get_call_log_entry(
-            account_id=account_id,
-            call_id=call_id,
-        )
+        # ── Step 2: Fetch call log with retries ──────────────────
+        call_log: dict[str, Any] | None = None
+        notes = ""
+        total_attempts = len(self._retry_schedule)
 
-        notes = _extract_notes_from_call_log(call_log or {})
-        retry_attempted = False
+        for attempt_idx, delay in enumerate(self._retry_schedule):
+            attempt_num = attempt_idx + 1
 
-        # ── Step 3: Retry once if notes not ready ────────────────
-        if not notes:
-            logger.info(
-                "AI notes not yet ready — waiting %ss before retry",
-                self._notes_retry_delay,
-                extra={
-                    "event": "call_summary_notes_not_ready",
-                    "call_id": call_id,
-                    "retry_delay": self._notes_retry_delay,
-                },
-            )
-            await asyncio.sleep(self._notes_retry_delay)
-            retry_attempted = True
+            if delay > 0:
+                logger.info(
+                    "Waiting %ss before call log fetch (attempt %d/%d)",
+                    delay, attempt_num, total_attempts,
+                    extra={
+                        "event": "call_summary_waiting",
+                        "call_id": call_id,
+                        "attempt": attempt_num,
+                        "delay": delay,
+                    },
+                )
+                await asyncio.sleep(delay)
 
             call_log = await self._rc_api.get_call_log_entry(
                 account_id=account_id,
                 call_id=call_id,
             )
-            notes = _extract_notes_from_call_log(call_log or {})
 
-            if not notes:
+            if call_log:
+                notes = _extract_notes_from_call_log(call_log)
+                if notes:
+                    logger.info(
+                        "AI notes fetched on attempt %d/%d",
+                        attempt_num, total_attempts,
+                        extra={
+                            "event": "call_summary_notes_fetched",
+                            "call_id": call_id,
+                            "attempt": attempt_num,
+                            "notes_length": len(notes),
+                        },
+                    )
+                    break
+                else:
+                    logger.info(
+                        "Call log fetched but AI notes not yet available (attempt %d/%d)",
+                        attempt_num, total_attempts,
+                        extra={
+                            "event": "call_summary_notes_not_ready",
+                            "call_id": call_id,
+                            "attempt": attempt_num,
+                        },
+                    )
+            else:
                 logger.warning(
-                    "AI notes still not available after retry — using fallback",
-                    extra={"event": "call_summary_notes_unavailable", "call_id": call_id},
+                    "Call log fetch failed (attempt %d/%d) — will retry",
+                    attempt_num, total_attempts,
+                    extra={
+                        "event": "call_summary_fetch_failed",
+                        "call_id": call_id,
+                        "attempt": attempt_num,
+                    },
                 )
 
-        # ── Step 4: Extract remaining metadata from call log ─────
+        retry_attempted = total_attempts > 1
+
+        if not notes:
+            logger.warning(
+                "AI notes not available after %d attempt(s) — using fallback",
+                total_attempts,
+                extra={
+                    "event": "call_summary_notes_unavailable",
+                    "call_id": call_id,
+                    "attempts": total_attempts,
+                },
+            )
+
+        # ── Step 3: Extract remaining metadata from call log ─────
         duration: Optional[int] = None
         call_datetime_utc: Optional[str] = None
 
@@ -301,20 +394,46 @@ class CallSummaryHandler:
             if start_time:
                 call_datetime_utc = start_time
 
-            # Refine agent/caller from call log if not available from event
-            if not agent_name or not caller_number:
-                log_parties = call_log.get("legs") or []
-                for leg in log_parties:
+            # Refine agent/caller from call log legs if event data was sparse
+            if not _is_real_agent_name(agent_name) or not caller_number:
+                log_from = call_log.get("from") or {}
+                log_to = call_log.get("to") or {}
+                log_direction = call_log.get("direction", "")
+
+                # Try top-level from/to first
+                if log_direction == "Inbound":
+                    if _is_real_agent_name(log_to.get("name")):
+                        agent_name = log_to.get("name")
+                    if not caller_number:
+                        caller_number = log_from.get("phoneNumber")
+                    if not caller_name:
+                        caller_name = log_from.get("name")
+                elif log_direction == "Outbound":
+                    if _is_real_agent_name(log_from.get("name")):
+                        agent_name = log_from.get("name")
+                    if not caller_number:
+                        caller_number = log_to.get("phoneNumber")
+                    if not caller_name:
+                        caller_name = log_to.get("name")
+
+                # Try legs as fallback
+                log_legs = call_log.get("legs") or []
+                for leg in log_legs:
                     leg_from = leg.get("from") or {}
                     leg_to = leg.get("to") or {}
-                    if not agent_name:
-                        agent_name = leg_from.get("name") or leg_to.get("name")
+                    leg_dir = leg.get("direction", "")
+
+                    if not _is_real_agent_name(agent_name):
+                        if leg_dir == "Inbound" and _is_real_agent_name(leg_to.get("name")):
+                            agent_name = leg_to.get("name")
+                        elif _is_real_agent_name(leg_from.get("name")):
+                            agent_name = leg_from.get("name")
                     if not caller_number:
                         caller_number = leg_from.get("phoneNumber") or leg_to.get("phoneNumber")
                     if not call_direction:
-                        call_direction = leg.get("direction")
+                        call_direction = leg_dir
 
-        # ── Step 5: Build payload ────────────────────────────────
+        # ── Step 4: Build payload ────────────────────────────────
         payload = CallSummaryPayload.build(
             call_id=call_id,
             agent_name=agent_name,
@@ -330,7 +449,7 @@ class CallSummaryHandler:
 
         self._log_payload(payload)
 
-        # ── Step 6: POST to Logics endpoint ──────────────────────
+        # ── Step 5: POST to Logics endpoint ──────────────────────
         if not self._logics_url:
             logger.warning(
                 "LOGICS_WEBHOOK_URL not configured — call summary not sent",
