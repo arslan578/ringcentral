@@ -303,6 +303,112 @@ class RCApiClient:
             )
             return None
 
+    # ── Call Log fetching (for AI call notes) ─────────────────────
+
+    async def get_call_log_entry(
+        self,
+        account_id: str,
+        call_id: str,
+    ) -> Optional[dict[str, Any]]:
+        """
+        Fetch a single call log entry from the RC Call Log API.
+
+        GET /restapi/v1.0/account/{accountId}/call-log/{callId}?view=Detailed
+
+        Returns the full call record including:
+          - parties[]: from/to numbers, names, directions
+          - duration: int (seconds)
+          - startTime: ISO-8601 timestamp
+          - notes: AI-generated call notes text (if available)
+          - recording: recording metadata (if available)
+
+        Returns None if not found or on error.
+
+        Reference:
+          https://developers.ringcentral.com/api-reference/Call-Log/readCompanyCallRecord
+        """
+        token = await self._ensure_token()
+
+        url = (
+            f"{self._server_url}/restapi/v1.0/account/{account_id}"
+            f"/call-log/{call_id}?view=Detailed"
+        )
+
+        logger.info(
+            "Fetching call log entry from RC API",
+            extra={
+                "event": "rc_api_fetch_call_log",
+                "account_id": account_id,
+                "call_id": call_id,
+            },
+        )
+
+        try:
+            response = await self._http.get(
+                url,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/json",
+                },
+                timeout=15.0,
+            )
+
+            if response.status_code == 404:
+                logger.warning(
+                    "RC call log entry not found",
+                    extra={
+                        "event": "rc_call_log_not_found",
+                        "call_id": call_id,
+                    },
+                )
+                return None
+
+            if not response.is_success:
+                logger.error(
+                    "RC API error fetching call log",
+                    extra={
+                        "event": "rc_call_log_api_error",
+                        "call_id": call_id,
+                        "status_code": response.status_code,
+                        "response_body": response.text[:500],
+                    },
+                )
+                return None
+
+            call_data = response.json()
+            logger.info(
+                "RC call log entry fetched successfully",
+                extra={
+                    "event": "rc_call_log_fetched",
+                    "call_id": call_id,
+                    "duration": call_data.get("duration"),
+                    "has_notes": bool(call_data.get("notes")),
+                },
+            )
+            return call_data
+
+        except httpx.TimeoutException as exc:
+            logger.error(
+                "RC Call Log API request timed out",
+                extra={
+                    "event": "rc_call_log_timeout",
+                    "call_id": call_id,
+                    "error": str(exc),
+                },
+            )
+            return None
+
+        except httpx.RequestError as exc:
+            logger.error(
+                "RC Call Log API network error",
+                extra={
+                    "event": "rc_call_log_network_error",
+                    "call_id": call_id,
+                    "error": str(exc),
+                },
+            )
+            return None
+
     async def get_messages_batch(
         self,
         account_id: str,

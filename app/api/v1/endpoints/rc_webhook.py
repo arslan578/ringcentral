@@ -42,6 +42,7 @@ from app.core.idempotency import IdempotencyCache
 from app.core.rc_validator import validate_verification_token
 from app.schemas.rc_message import RCMessage, RCWebhookEvent
 from app.schemas.zapier_payload import ZapierPayload
+from app.services.call_summary_handler import CallSummaryHandler
 from app.services.rc_api_client import RCApiClient
 from app.services.redaction import SensitiveDataRedactor
 from app.services.zapier_forwarder import ZapierForwarder
@@ -139,6 +140,10 @@ def _get_redactor(request: Request) -> SensitiveDataRedactor:
     return request.app.state.redactor
 
 
+def _get_call_summary_handler(request: Request) -> CallSummaryHandler:
+    return request.app.state.call_summary_handler
+
+
 @router.get(
     "/webhook",
     summary="RC Webhook Validation Challenge",
@@ -188,6 +193,7 @@ async def rc_webhook_receiver(
     idempotency: IdempotencyCache = Depends(_get_idempotency_cache),
     rc_api: RCApiClient = Depends(_get_rc_api_client),
     redactor: SensitiveDataRedactor = Depends(_get_redactor),
+    call_summary_handler: CallSummaryHandler = Depends(_get_call_summary_handler),
 ) -> dict[str, Any]:
     """
     POST /api/v1/rc/webhook
@@ -257,7 +263,23 @@ async def rc_webhook_receiver(
         },
     )
 
-    # ── Step 3: Parse into RCWebhookEvent ──────────────────────────
+    # ── Step 2a: Route call-ended events to the CallSummaryHandler ─────
+    # RC telephony/sessions events have a different event path from
+    # message-store events.  They are mutually exclusive — handle
+    # call-ended events first, then fall through to SMS logic.
+    event_path: str = raw_body.get("event", "") or ""
+    if "/telephony/sessions" in event_path:
+        logger.info(
+            "Call-ended event detected — routing to CallSummaryHandler",
+            extra={
+                "event": "call_ended_event_detected",
+                "rc_event_path": event_path,
+            },
+        )
+        result = await call_summary_handler.handle(raw_body)
+        return {"status": "call_summary_processed", "detail": result}
+
+    # ── Step 3: Parse into RCWebhookEvent (SMS path) ────────────────
     try:
         event = RCWebhookEvent.model_validate(raw_body)
     except Exception as exc:
