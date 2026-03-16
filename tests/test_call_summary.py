@@ -10,6 +10,9 @@ Tests cover:
   4. Fallback when notes never arrive
   5. SMS path unaffected (regression)
   6. Logics POST failure handled gracefully (200 still returned to RC)
+  7. Deduplication: second Disconnected event for same session is skipped
+  8. Status filtering: only Disconnected triggers handler
+  9. Agent name filtering: IVR/queue names are skipped
 """
 from __future__ import annotations
 
@@ -24,6 +27,7 @@ from app.services.call_summary_handler import (
     CallSummaryHandler,
     _extract_call_info,
     _extract_notes_from_call_log,
+    _is_real_agent_name,
 )
 from app.schemas.call_summary_payload import CallSummaryPayload
 from app.services.rc_api_client import RCApiClient
@@ -156,7 +160,7 @@ def _setup_call_app_state(
         rc_api=mock_rc_api,
         http_client=mock_http,  # type: ignore[arg-type]
         logics_url="https://hooks.logics.test/call-summary/",
-        notes_retry_delay=0,  # zero delay for tests
+        retry_schedule=[0],  # single immediate attempt for tests (no waiting)
     )
 
     app.state.rc_api_client = mock_rc_api
@@ -165,6 +169,27 @@ def _setup_call_app_state(
     app.state.idempotency_cache = IdempotencyCache(maxsize=100, ttl=60)
     app.state.redactor = SensitiveDataRedactor(enabled=False)
     return handler, mock_http
+
+
+# ─────────────────────────────────────────────────────────────────
+# Unit tests: _is_real_agent_name
+# ─────────────────────────────────────────────────────────────────
+
+def test_real_agent_name():
+    """Real person names return True."""
+    assert _is_real_agent_name("Jane Smith") is True
+    assert _is_real_agent_name("Gilbert Paa") is True
+    assert _is_real_agent_name("Marisol Contrer") is True
+
+
+def test_ivr_names_are_not_agents():
+    """IVR/queue names return False."""
+    assert _is_real_agent_name("Main Company Number") is False
+    assert _is_real_agent_name("1d. Billing Department") is False
+    assert _is_real_agent_name("Auto Receptionist") is False
+    assert _is_real_agent_name("IVR") is False
+    assert _is_real_agent_name(None) is False
+    assert _is_real_agent_name("") is False
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -213,6 +238,36 @@ def test_extract_call_info_outbound():
     assert caller_number == "+15551112222"
     assert caller_name == "Dave"
     assert direction == "Outbound"
+
+
+def test_extract_call_info_skips_ivr_prefers_real_agent():
+    """When multiple parties exist, IVR names are skipped in favor of real agents."""
+    payload = {
+        "event": "/restapi/v1.0/account/123/telephony/sessions",
+        "body": {
+            "accountId": "123",
+            "telephonySessionId": "s-multi",
+            "parties": [
+                {
+                    "extensionId": "1001",
+                    "direction": "Inbound",
+                    "status": {"code": "Disconnected"},
+                    "from": {"phoneNumber": "+15550001111", "name": "Caller"},
+                    "to": {"phoneNumber": "+18880001111", "name": "Main Company Number"},
+                },
+                {
+                    "extensionId": "2002",
+                    "direction": "Inbound",
+                    "status": {"code": "Disconnected"},
+                    "from": {"phoneNumber": "+15550001111", "name": "Caller"},
+                    "to": {"phoneNumber": "+15559990000", "name": "Sarah Johnson"},
+                },
+            ],
+        },
+    }
+    _, _, agent_name, _, caller_number, caller_name, _, _, __ = _extract_call_info(payload)
+    assert agent_name == "Sarah Johnson"      # Real agent, not "Main Company Number"
+    assert caller_number == "+15550001111"
 
 
 def test_extract_call_info_missing_session_id():
@@ -414,14 +469,73 @@ def test_call_ended_does_not_trigger_sms_forwarding(app, client: TestClient):
 
 
 # ─────────────────────────────────────────────────────────────────
+# Deduplication tests
+# ─────────────────────────────────────────────────────────────────
+
+def test_duplicate_disconnected_event_is_skipped(app, client: TestClient):
+    """Second Disconnected event for the same session is skipped (dedup)."""
+    _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
+
+    # First call → processed
+    resp1 = client.post(
+        "/api/v1/rc/webhook",
+        json=RC_CALL_ENDED_PAYLOAD,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+    assert resp1.json()["status"] == "call_summary_processed"
+    assert mock_http.post.call_count == 1
+
+    # Second call with same session ID → duplicate skipped
+    resp2 = client.post(
+        "/api/v1/rc/webhook",
+        json=RC_CALL_ENDED_PAYLOAD,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+    assert resp2.json()["status"] == "duplicate_call_skipped"
+    # Logics POST was NOT called again
+    assert mock_http.post.call_count == 1
+
+
+def test_different_sessions_are_both_processed(app, client: TestClient):
+    """Different session IDs are processed independently."""
+    _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
+
+    # First session
+    client.post(
+        "/api/v1/rc/webhook",
+        json=RC_CALL_ENDED_PAYLOAD,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+
+    # Different session
+    payload2 = {
+        **RC_CALL_ENDED_PAYLOAD,
+        "uuid": "call-uuid-002",
+        "body": {
+            **RC_CALL_ENDED_PAYLOAD["body"],
+            "telephonySessionId": "s-different-session",
+            "sessionId": "s-different-session",
+        },
+    }
+    client.post(
+        "/api/v1/rc/webhook",
+        json=payload2,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+
+    # Both should have been processed
+    assert mock_http.post.call_count == 2
+
+
+# ─────────────────────────────────────────────────────────────────
 # Retry logic tests
 # ─────────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_notes_not_ready_triggers_retry():
     """
-    When the first call log fetch returns no notes, the handler waits
-    (mocked to 0s in tests) and retries once. The second call returns notes.
+    When the first call log fetch returns no notes, the handler retries.
+    On the second attempt, notes become available.
     """
     mock_rc_api = MagicMock(spec=RCApiClient)
     # First call: no notes. Second call: notes available.
@@ -435,7 +549,7 @@ async def test_notes_not_ready_triggers_retry():
         rc_api=mock_rc_api,
         http_client=mock_http,  # type: ignore[arg-type]
         logics_url="https://hooks.logics.test/call-summary/",
-        notes_retry_delay=0,  # no actual waiting in tests
+        retry_schedule=[0, 0],  # two attempts, no waiting
     )
 
     result = await handler.handle(RC_CALL_ENDED_PAYLOAD)
@@ -444,7 +558,7 @@ async def test_notes_not_ready_triggers_retry():
     assert mock_rc_api.get_call_log_entry.call_count == 2
     # Logics POST should have been made
     assert mock_http.post.call_count == 1
-    # Result indicates retry happened
+    # Result indicates success
     assert result["status"] == "sent"
 
     # The POSTed payload should have the notes text, not the fallback
@@ -456,13 +570,13 @@ async def test_notes_not_ready_triggers_retry():
 @pytest.mark.asyncio
 async def test_notes_never_ready_sends_fallback():
     """
-    If notes are empty after both attempts, the handler sends a summary
+    If notes are empty after all attempts, the handler sends a summary
     with body='(AI notes not available)' — it does NOT drop the event.
     """
     mock_rc_api = MagicMock(spec=RCApiClient)
-    # Both calls return empty notes
+    # All calls return empty notes
     mock_rc_api.get_call_log_entry = AsyncMock(
-        side_effect=[RC_CALL_LOG_NO_NOTES, RC_CALL_LOG_NO_NOTES]
+        side_effect=[RC_CALL_LOG_NO_NOTES, RC_CALL_LOG_NO_NOTES, RC_CALL_LOG_NO_NOTES]
     )
 
     mock_http = _make_mock_http_client(200)
@@ -471,12 +585,12 @@ async def test_notes_never_ready_sends_fallback():
         rc_api=mock_rc_api,
         http_client=mock_http,  # type: ignore[arg-type]
         logics_url="https://hooks.logics.test/call-summary/",
-        notes_retry_delay=0,
+        retry_schedule=[0, 0, 0],  # three attempts, no waiting
     )
 
     result = await handler.handle(RC_CALL_ENDED_PAYLOAD)
 
-    assert mock_rc_api.get_call_log_entry.call_count == 2
+    assert mock_rc_api.get_call_log_entry.call_count == 3
     assert mock_http.post.call_count == 1
     payload_json = mock_http.post.call_args[1]["json"]
     assert payload_json["body"] == "(AI notes not available)"
@@ -495,7 +609,7 @@ async def test_notes_ready_on_first_try_no_retry():
         rc_api=mock_rc_api,
         http_client=mock_http,  # type: ignore[arg-type]
         logics_url="https://hooks.logics.test/call-summary/",
-        notes_retry_delay=0,
+        retry_schedule=[0],  # single attempt
     )
 
     result = await handler.handle(RC_CALL_ENDED_PAYLOAD)
@@ -506,6 +620,32 @@ async def test_notes_ready_on_first_try_no_retry():
 
     payload_json = mock_http.post.call_args[1]["json"]
     assert payload_json["notes_retry_attempted"] is False
+
+
+@pytest.mark.asyncio
+async def test_api_failure_then_success():
+    """When the first API call returns None (failure), the handler retries."""
+    mock_rc_api = MagicMock(spec=RCApiClient)
+    # First call: API failure (returns None). Second call: success.
+    mock_rc_api.get_call_log_entry = AsyncMock(
+        side_effect=[None, RC_CALL_LOG_WITH_NOTES]
+    )
+
+    mock_http = _make_mock_http_client(200)
+
+    handler = CallSummaryHandler(
+        rc_api=mock_rc_api,
+        http_client=mock_http,  # type: ignore[arg-type]
+        logics_url="https://hooks.logics.test/call-summary/",
+        retry_schedule=[0, 0],  # two attempts, no waiting
+    )
+
+    result = await handler.handle(RC_CALL_ENDED_PAYLOAD)
+
+    assert mock_rc_api.get_call_log_entry.call_count == 2
+    assert result["status"] == "sent"
+    payload_json = mock_http.post.call_args[1]["json"]
+    assert "Customer John" in payload_json["body"]
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -553,7 +693,7 @@ async def test_missing_call_id_is_skipped():
         rc_api=mock_rc_api,
         http_client=mock_http,  # type: ignore[arg-type]
         logics_url="https://hooks.logics.test/",
-        notes_retry_delay=0,
+        retry_schedule=[0],
     )
 
     result = await handler.handle(payload_no_id)
@@ -575,7 +715,7 @@ async def test_no_logics_url_logs_and_skips():
         rc_api=mock_rc_api,
         http_client=mock_http,  # type: ignore[arg-type]
         logics_url="",  # Not configured
-        notes_retry_delay=0,
+        retry_schedule=[0],
     )
 
     result = await handler.handle(RC_CALL_ENDED_PAYLOAD)
@@ -607,7 +747,7 @@ def test_sms_notification_still_forwarded_after_feature_added(app, client: TestC
         rc_api=mock_rc_api,
         http_client=mock_http,  # type: ignore[arg-type]
         logics_url="https://hooks.logics.test/",
-        notes_retry_delay=0,
+        retry_schedule=[0],
     )
 
     app.state.rc_api_client = mock_rc_api
@@ -734,4 +874,3 @@ def test_disconnected_event_is_processed(app, client: TestClient):
     assert body["status"] == "call_summary_processed"
     # Logics POST WAS made
     assert mock_http.post.call_count == 1
-

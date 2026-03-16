@@ -269,10 +269,20 @@ async def rc_webhook_receiver(
     # RC sends a telephony/sessions webhook for EVERY status change:
     #   Proceeding → Answered → Hold → Disconnected
     # We only want "Disconnected" (= call ended). All others are skipped.
+    #
+    # DEDUPLICATION: RC also sends a SEPARATE Disconnected event for each
+    # party in the call (IVR, queue, agent). We must only process the
+    # first one per session ID, or we'll get 429 rate-limited.
     event_path: str = raw_body.get("event", "") or ""
     if "/telephony/sessions" in event_path:
         body = raw_body.get("body", {}) or {}
         parties = body.get("parties", []) or []
+
+        session_id = str(
+            body.get("telephonySessionId")
+            or body.get("sessionId")
+            or ""
+        )
 
         # Extract all party status codes from the event
         party_statuses = [
@@ -287,19 +297,35 @@ async def rc_webhook_receiver(
                 "event": "telephony_event_received",
                 "rc_event_path": event_path,
                 "party_statuses": party_statuses,
-                "session_id": body.get("telephonySessionId")
-                              or body.get("sessionId", ""),
+                "session_id": session_id,
             },
         )
 
         # Only process when at least one party is Disconnected
         if any(s == "Disconnected" for s in party_statuses):
+
+            # ── Deduplicate: skip if we already processed this session ──
+            dedup_key = f"call:{session_id}"
+            if idempotency.is_duplicate(dedup_key):
+                logger.info(
+                    "Call-ended event already processed for this session — skipping duplicate",
+                    extra={
+                        "event": "call_ended_duplicate_skipped",
+                        "session_id": session_id,
+                    },
+                )
+                return {"status": "duplicate_call_skipped", "session_id": session_id}
+
+            # Mark this session as seen BEFORE processing
+            idempotency.mark_seen(dedup_key)
+
             logger.info(
                 "Call-ended (Disconnected) detected — routing to CallSummaryHandler",
                 extra={
                     "event": "call_ended_event_detected",
                     "rc_event_path": event_path,
                     "party_statuses": party_statuses,
+                    "session_id": session_id,
                 },
             )
             result = await call_summary_handler.handle(raw_body)
