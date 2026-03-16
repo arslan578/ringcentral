@@ -390,7 +390,7 @@ def test_call_summary_payload_is_flat():
 # ─────────────────────────────────────────────────────────────────
 
 def test_call_ended_event_returns_200(app, client: TestClient):
-    """Call-ended webhook returns 200 and call_summary_processed status."""
+    """Call-ended webhook returns 200 and call_summary_queued status."""
     _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
 
     response = client.post(
@@ -401,7 +401,7 @@ def test_call_ended_event_returns_200(app, client: TestClient):
 
     assert response.status_code == 200
     body = response.json()
-    assert body["status"] == "call_summary_processed"
+    assert body["status"] == "call_summary_queued"
 
 
 def test_call_ended_event_calls_logics_endpoint(app, client: TestClient):
@@ -476,13 +476,13 @@ def test_duplicate_disconnected_event_is_skipped(app, client: TestClient):
     """Second Disconnected event for the same session is skipped (dedup)."""
     _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
 
-    # First call → processed
+    # First call → queued for background processing
     resp1 = client.post(
         "/api/v1/rc/webhook",
         json=RC_CALL_ENDED_PAYLOAD,
         headers={"Verification-Token": VALID_TOKEN},
     )
-    assert resp1.json()["status"] == "call_summary_processed"
+    assert resp1.json()["status"] == "call_summary_queued"
     assert mock_http.post.call_count == 1
 
     # Second call with same session ID → duplicate skipped
@@ -497,7 +497,7 @@ def test_duplicate_disconnected_event_is_skipped(app, client: TestClient):
 
 
 def test_different_sessions_are_both_processed(app, client: TestClient):
-    """Different session IDs are processed independently."""
+    """Different session IDs with different phone numbers are processed independently."""
     _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
 
     # First session
@@ -507,14 +507,26 @@ def test_different_sessions_are_both_processed(app, client: TestClient):
         headers={"Verification-Token": VALID_TOKEN},
     )
 
-    # Different session
+    # Different session with DIFFERENT phone numbers (truly different call)
     payload2 = {
         **RC_CALL_ENDED_PAYLOAD,
         "uuid": "call-uuid-002",
         "body": {
-            **RC_CALL_ENDED_PAYLOAD["body"],
+            "accountId": "315079026",
             "telephonySessionId": "s-different-session",
             "sessionId": "s-different-session",
+            "parties": [
+                {
+                    "accountId": "315079026",
+                    "extensionId": "2582602027",
+                    "id": "party-agent-002",
+                    "direction": "Inbound",
+                    "status": {"code": "Disconnected"},
+                    "muted": False,
+                    "from": {"phoneNumber": "+15553334444", "name": "Alice"},
+                    "to": {"phoneNumber": "+15557778888", "name": "Bob Agent"},
+                }
+            ],
         },
     }
     client.post(
@@ -523,8 +535,42 @@ def test_different_sessions_are_both_processed(app, client: TestClient):
         headers={"Verification-Token": VALID_TOKEN},
     )
 
-    # Both should have been processed
+    # Both should have been processed (different calls)
     assert mock_http.post.call_count == 2
+
+
+def test_same_phones_different_sessions_are_deduped(app, client: TestClient):
+    """Same phone pair but different session IDs (IVR/queue legs) are deduped."""
+    _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
+
+    # First session — processed
+    resp1 = client.post(
+        "/api/v1/rc/webhook",
+        json=RC_CALL_ENDED_PAYLOAD,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+    assert resp1.json()["status"] == "call_summary_queued"
+
+    # Different session ID but SAME phone numbers (IVR/queue/agent legs)
+    payload2 = {
+        **RC_CALL_ENDED_PAYLOAD,
+        "uuid": "call-uuid-002",
+        "body": {
+            **RC_CALL_ENDED_PAYLOAD["body"],
+            "telephonySessionId": "s-different-session-same-call",
+            "sessionId": "s-different-session-same-call",
+        },
+    }
+    resp2 = client.post(
+        "/api/v1/rc/webhook",
+        json=payload2,
+        headers={"Verification-Token": VALID_TOKEN},
+    )
+
+    # Second should be caught by phone-pair dedup
+    assert resp2.json()["status"] == "duplicate_call_skipped"
+    # Only ONE Logics POST
+    assert mock_http.post.call_count == 1
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -667,10 +713,10 @@ def test_logics_endpoint_failure_still_returns_200_to_rc(app, client: TestClient
     )
 
     # RC must get 200 regardless of Logics failure
+    # (handler runs in background, RC gets instant 200)
     assert response.status_code == 200
     body = response.json()
-    assert body["status"] == "call_summary_processed"
-    assert body["detail"]["status"] == "logics_error"
+    assert body["status"] == "call_summary_queued"
 
 
 @pytest.mark.asyncio
@@ -871,6 +917,6 @@ def test_disconnected_event_is_processed(app, client: TestClient):
 
     assert response.status_code == 200
     body = response.json()
-    assert body["status"] == "call_summary_processed"
-    # Logics POST WAS made
+    assert body["status"] == "call_summary_queued"
+    # Logics POST WAS made (BackgroundTasks complete before TestClient returns)
     assert mock_http.post.call_count == 1

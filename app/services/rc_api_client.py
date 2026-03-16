@@ -32,6 +32,14 @@ class RCApiClient:
     """
     Async RingCentral REST API client.
     Handles OAuth2 JWT authentication and message fetching.
+
+    Rate-limit protection:
+      - A global asyncio.Semaphore(1) ensures only ONE call-log API request
+        is in-flight at any time.  This prevents the cascading-429 problem
+        where dozens of concurrent handlers each hit the API simultaneously.
+      - A global _rate_limit_until timestamp is set whenever ANY request
+        receives a 429.  All subsequent requests sleep until the cooldown
+        expires, so we never waste retries while rate-limited.
     """
 
     def __init__(
@@ -52,6 +60,12 @@ class RCApiClient:
         self._access_token: Optional[str] = None
         self._token_expires_at: float = 0.0
         self._token_lock = asyncio.Lock()
+
+        # ── Global rate-limit protection ───────────────────────────
+        # Only ONE call-log request at a time (prevents 429 avalanche)
+        self._call_log_semaphore = asyncio.Semaphore(1)
+        # Timestamp until which ALL requests should wait (set on 429)
+        self._global_rate_limit_until: float = 0.0
 
     async def _ensure_token(self) -> str:
         """
@@ -305,6 +319,43 @@ class RCApiClient:
 
     # ── Call Log fetching (for AI call notes) ─────────────────────
 
+    # ── Global rate-limit helpers ────────────────────────────────
+
+    async def _wait_for_global_cooldown(self) -> None:
+        """
+        If a previous request received 429, ALL subsequent requests must
+        wait until the cooldown expires.  This prevents dozens of concurrent
+        handlers from independently hammering the API during a rate-limit
+        window.
+        """
+        now = time.time()
+        if self._global_rate_limit_until > now:
+            wait_time = self._global_rate_limit_until - now
+            logger.info(
+                "Global rate-limit cooldown active — waiting %.0fs before next API call",
+                wait_time,
+                extra={
+                    "event": "rc_global_cooldown_wait",
+                    "wait_seconds": round(wait_time),
+                },
+            )
+            await asyncio.sleep(wait_time)
+
+    def _set_global_cooldown(self, retry_after: int) -> None:
+        """Set the global cooldown timestamp so ALL requests respect it."""
+        new_until = time.time() + retry_after
+        # Only extend, never shorten
+        if new_until > self._global_rate_limit_until:
+            self._global_rate_limit_until = new_until
+            logger.info(
+                "Global rate-limit cooldown set for %ds",
+                retry_after,
+                extra={
+                    "event": "rc_global_cooldown_set",
+                    "retry_after": retry_after,
+                },
+            )
+
     async def get_call_log_entry(
         self,
         account_id: str,
@@ -330,13 +381,27 @@ class RCApiClient:
         Returns None if not found or on error.
 
         Rate‐limit handling:
-          If RC returns 429, this method reads the Retry-After header,
-          waits the indicated duration (default 60s), and retries up to
-          3 times before giving up and returning None.
+          - A global semaphore ensures only ONE call-log request is in-flight.
+          - A global cooldown timestamp prevents retries while rate-limited.
+          - If RC returns 429, the Retry-After header is read and applied
+            globally, then the request is retried up to 3 times.
 
         Reference:
           https://developers.ringcentral.com/api-reference/Call-Log/readCompanyCallRecord
         """
+        # ── Acquire semaphore: only ONE call-log fetch at a time ──
+        async with self._call_log_semaphore:
+            return await self._fetch_call_log_inner(account_id, call_id)
+
+    async def _fetch_call_log_inner(
+        self,
+        account_id: str,
+        call_id: str,
+    ) -> Optional[dict[str, Any]]:
+        """Inner implementation — runs inside the semaphore."""
+        # Respect global cooldown BEFORE making any request
+        await self._wait_for_global_cooldown()
+
         token = await self._ensure_token()
 
         # Use '~' so the request goes against the authenticated account,
@@ -359,6 +424,9 @@ class RCApiClient:
 
         for attempt in range(1, max_429_retries + 1):
             try:
+                # Re-check global cooldown before each retry
+                await self._wait_for_global_cooldown()
+
                 response = await self._http.get(
                     url,
                     headers={
@@ -389,6 +457,10 @@ class RCApiClient:
 
                     # Cap at 120s to avoid excessively long waits
                     retry_after = min(retry_after, 120)
+
+                    # Set GLOBAL cooldown so ALL other waiting requests
+                    # also respect this rate limit (not just this one)
+                    self._set_global_cooldown(retry_after)
 
                     if attempt < max_429_retries:
                         logger.warning(

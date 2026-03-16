@@ -244,6 +244,15 @@ class CallSummaryHandler:
     Handles RingCentral telephony call-ended events end-to-end.
 
     Instantiated once at startup and stored on app.state.call_summary_handler.
+
+    Concurrency control:
+      An asyncio.Lock serializes ALL call-ended processing so only ONE
+      call is being fetched/posted at any given moment.  This prevents
+      dozens of concurrent handlers from all hitting the RC API at once
+      and causing a cascading 429 rate-limit avalanche.
+
+      Combined with the per-request semaphore in RCApiClient, this
+      guarantees the RC rate limits are respected.
     """
 
     def __init__(
@@ -258,9 +267,18 @@ class CallSummaryHandler:
         self._logics_url = logics_url
         self._retry_schedule = retry_schedule if retry_schedule is not None else _DEFAULT_RETRY_SCHEDULE
 
+        # ── Serialize call processing ─────────────────────────────
+        # Only ONE call-ended event is processed at a time.
+        # Others queue behind this lock automatically.
+        self._processing_lock = asyncio.Lock()
+
     async def handle(self, raw_body: dict[str, Any]) -> dict[str, Any]:
         """
-        Process a call-ended webhook event.
+        Process a call-ended webhook event (serialized).
+
+        Acquires _processing_lock so only one event is processed at a time.
+        This is critical: without it, dozens of concurrent handlers blast
+        the RC API simultaneously, causing 429 cascades.
 
         Steps:
           1. Extract call_id and agent info from the payload.
@@ -273,6 +291,24 @@ class CallSummaryHandler:
 
         Returns:
             dict with 'status' and contextual fields.
+        """
+        try:
+            async with self._processing_lock:
+                return await self._process_call(raw_body)
+        except Exception as exc:
+            logger.error(
+                "Unexpected error in call summary handler",
+                extra={
+                    "event": "call_summary_unexpected_error",
+                    "error": str(exc),
+                },
+                exc_info=True,
+            )
+            return {"status": "error", "reason": str(exc)}
+
+    async def _process_call(self, raw_body: dict[str, Any]) -> dict[str, Any]:
+        """
+        Inner processing logic — runs inside the _processing_lock.
         """
         (
             account_id,
