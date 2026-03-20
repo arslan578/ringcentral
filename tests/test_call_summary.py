@@ -390,7 +390,7 @@ def test_call_summary_payload_is_flat():
 # ─────────────────────────────────────────────────────────────────
 
 def test_call_ended_event_returns_200(app, client: TestClient):
-    """Call-ended webhook returns 200 and call_summary_queued status."""
+    """Call-ended telephony webhook returns 200 and is ignored."""
     _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
 
     response = client.post(
@@ -401,11 +401,11 @@ def test_call_ended_event_returns_200(app, client: TestClient):
 
     assert response.status_code == 200
     body = response.json()
-    assert body["status"] == "call_summary_queued"
+    assert body["status"] == "telephony_ignored"
 
 
 def test_call_ended_event_calls_logics_endpoint(app, client: TestClient):
-    """Call-ended webhook triggers a POST to the Logics endpoint."""
+    """Call-ended webhook should NOT POST to the Logics endpoint."""
     _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
 
     client.post(
@@ -414,15 +414,12 @@ def test_call_ended_event_calls_logics_endpoint(app, client: TestClient):
         headers={"Verification-Token": VALID_TOKEN},
     )
 
-    # Logics POST must have been called
-    assert mock_http.post.call_count == 1
-    call_kwargs = mock_http.post.call_args
-    posted_url = call_kwargs[0][0]
-    assert "logics.test" in posted_url
+    # Logics POST must NOT have been called (integration disabled)
+    mock_http.post.assert_not_called()
 
 
 def test_call_ended_payload_has_correct_fields(app, client: TestClient):
-    """Verify the payload POSTed to Logics has the right structure and values."""
+    """Verify no payload is POSTed to Logics (integration disabled)."""
     _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
 
     client.post(
@@ -431,26 +428,7 @@ def test_call_ended_payload_has_correct_fields(app, client: TestClient):
         headers={"Verification-Token": VALID_TOKEN},
     )
 
-    assert mock_http.post.call_count == 1
-    # Extract the JSON dict that was POSTed
-    payload_dict = mock_http.post.call_args[1]["json"]
-
-    # Subject format
-    assert payload_dict["subject"].startswith("RingCentral Call Summary By:")
-    assert "Jane Smith" in payload_dict["subject"]
-
-    # Body (AI notes)
-    assert "Customer John Doe" in payload_dict["body"]
-
-    # Caller metadata
-    assert payload_dict["caller_number"] == "+15550001111"
-    assert payload_dict["call_duration_seconds"] == 185
-    assert payload_dict["call_datetime_utc"] == "2026-03-14T17:00:01.000Z"
-
-    # Event / source
-    assert payload_dict["event_type"] == "call_ended"
-    assert payload_dict["source"] == "ringcentral_call"
-    assert payload_dict["call_id"] == "s-call-session-abc123"
+    mock_http.post.assert_not_called()
 
 
 def test_call_ended_does_not_trigger_sms_forwarding(app, client: TestClient):
@@ -473,34 +451,30 @@ def test_call_ended_does_not_trigger_sms_forwarding(app, client: TestClient):
 # ─────────────────────────────────────────────────────────────────
 
 def test_duplicate_disconnected_event_is_skipped(app, client: TestClient):
-    """Second Disconnected event for the same session is skipped (dedup)."""
+    """Call-ended events are ignored entirely (no dedup side effects)."""
     _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
 
-    # First call → queued for background processing
     resp1 = client.post(
         "/api/v1/rc/webhook",
         json=RC_CALL_ENDED_PAYLOAD,
         headers={"Verification-Token": VALID_TOKEN},
     )
-    assert resp1.json()["status"] == "call_summary_queued"
-    assert mock_http.post.call_count == 1
+    assert resp1.json()["status"] == "telephony_ignored"
+    mock_http.post.assert_not_called()
 
-    # Second call with same session ID → duplicate skipped
     resp2 = client.post(
         "/api/v1/rc/webhook",
         json=RC_CALL_ENDED_PAYLOAD,
         headers={"Verification-Token": VALID_TOKEN},
     )
-    assert resp2.json()["status"] == "duplicate_call_skipped"
-    # Logics POST was NOT called again
-    assert mock_http.post.call_count == 1
+    assert resp2.json()["status"] == "telephony_ignored"
+    mock_http.post.assert_not_called()
 
 
 def test_different_sessions_are_both_processed(app, client: TestClient):
-    """Different session IDs with different phone numbers are processed independently."""
+    """Telephony events are ignored; no Logics POST for any session."""
     _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
 
-    # First session
     client.post(
         "/api/v1/rc/webhook",
         json=RC_CALL_ENDED_PAYLOAD,
@@ -535,23 +509,20 @@ def test_different_sessions_are_both_processed(app, client: TestClient):
         headers={"Verification-Token": VALID_TOKEN},
     )
 
-    # Both should have been processed (different calls)
-    assert mock_http.post.call_count == 2
+    mock_http.post.assert_not_called()
 
 
 def test_same_phones_different_sessions_are_deduped(app, client: TestClient):
-    """Same phone pair but different session IDs (IVR/queue legs) are deduped."""
+    """Telephony events are ignored; dedup logic is not exercised."""
     _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
 
-    # First session — processed
     resp1 = client.post(
         "/api/v1/rc/webhook",
         json=RC_CALL_ENDED_PAYLOAD,
         headers={"Verification-Token": VALID_TOKEN},
     )
-    assert resp1.json()["status"] == "call_summary_queued"
+    assert resp1.json()["status"] == "telephony_ignored"
 
-    # Different session ID but SAME phone numbers (IVR/queue/agent legs)
     payload2 = {
         **RC_CALL_ENDED_PAYLOAD,
         "uuid": "call-uuid-002",
@@ -567,10 +538,8 @@ def test_same_phones_different_sessions_are_deduped(app, client: TestClient):
         headers={"Verification-Token": VALID_TOKEN},
     )
 
-    # Second should be caught by phone-pair dedup
-    assert resp2.json()["status"] == "duplicate_call_skipped"
-    # Only ONE Logics POST
-    assert mock_http.post.call_count == 1
+    assert resp2.json()["status"] == "telephony_ignored"
+    mock_http.post.assert_not_called()
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -699,7 +668,7 @@ async def test_api_failure_then_success():
 # ─────────────────────────────────────────────────────────────────
 
 def test_logics_endpoint_failure_still_returns_200_to_rc(app, client: TestClient):
-    """If Logics POST fails (5xx), we still return 200 to RC (so RC doesn't retry)."""
+    """If Logics POST would fail, it should still not be called (integration disabled)."""
     _setup_call_app_state(
         app,
         call_log=RC_CALL_LOG_WITH_NOTES,
@@ -713,10 +682,9 @@ def test_logics_endpoint_failure_still_returns_200_to_rc(app, client: TestClient
     )
 
     # RC must get 200 regardless of Logics failure
-    # (handler runs in background, RC gets instant 200)
     assert response.status_code == 200
     body = response.json()
-    assert body["status"] == "call_summary_queued"
+    assert body["status"] == "telephony_ignored"
 
 
 @pytest.mark.asyncio
@@ -873,7 +841,7 @@ RC_CALL_ANSWERED_PAYLOAD = {
 
 
 def test_ringing_event_is_skipped(app, client: TestClient):
-    """Telephony event with Proceeding (ringing) should be skipped, NOT sent to Logics."""
+    """Telephony events are ignored; no Logics POST for ringing/other statuses."""
     _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
 
     response = client.post(
@@ -884,13 +852,12 @@ def test_ringing_event_is_skipped(app, client: TestClient):
 
     assert response.status_code == 200
     body = response.json()
-    assert body["status"] == "telephony_event_skipped"
-    # Handler was NOT called (no Logics POST)
+    assert body["status"] == "telephony_ignored"
     mock_http.post.assert_not_called()
 
 
 def test_answered_event_is_skipped(app, client: TestClient):
-    """Telephony event with Answered should be skipped, NOT sent to Logics."""
+    """Telephony events are ignored; no Logics POST for answered/other statuses."""
     _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
 
     response = client.post(
@@ -901,12 +868,12 @@ def test_answered_event_is_skipped(app, client: TestClient):
 
     assert response.status_code == 200
     body = response.json()
-    assert body["status"] == "telephony_event_skipped"
+    assert body["status"] == "telephony_ignored"
     mock_http.post.assert_not_called()
 
 
 def test_disconnected_event_is_processed(app, client: TestClient):
-    """Only Disconnected status triggers the full call summary handler."""
+    """Disconnected status should also be ignored (integration disabled)."""
     _, mock_http = _setup_call_app_state(app, call_log=RC_CALL_LOG_WITH_NOTES)
 
     response = client.post(
@@ -917,6 +884,5 @@ def test_disconnected_event_is_processed(app, client: TestClient):
 
     assert response.status_code == 200
     body = response.json()
-    assert body["status"] == "call_summary_queued"
-    # Logics POST WAS made (BackgroundTasks complete before TestClient returns)
-    assert mock_http.post.call_count == 1
+    assert body["status"] == "telephony_ignored"
+    mock_http.post.assert_not_called()
