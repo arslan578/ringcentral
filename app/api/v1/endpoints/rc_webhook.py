@@ -25,17 +25,14 @@ IMPORTANT:
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import PlainTextResponse
 
 from app.config import Settings, get_settings
 from app.core.exceptions import (
-    DuplicateMessageError,
-    PayloadParseError,
     RCValidationError,
     ZapierForwardError,
 )
@@ -43,7 +40,6 @@ from app.core.idempotency import IdempotencyCache
 from app.core.rc_validator import validate_verification_token
 from app.schemas.rc_message import RCMessage, RCWebhookEvent
 from app.schemas.zapier_payload import ZapierPayload
-from app.services.call_summary_handler import CallSummaryHandler
 from app.services.rc_api_client import RCApiClient
 from app.services.redaction import SensitiveDataRedactor
 from app.services.zapier_forwarder import ZapierForwarder
@@ -141,71 +137,6 @@ def _get_redactor(request: Request) -> SensitiveDataRedactor:
     return request.app.state.redactor
 
 
-def _get_call_summary_handler(request: Request) -> CallSummaryHandler:
-    return request.app.state.call_summary_handler
-
-
-def _build_phone_dedup_key(parties: list[dict]) -> str:
-    """
-    Build a dedup key from the phone numbers in a telephony event.
-
-    RC creates separate telephonySessionId values when a call is
-    transferred through IVR → Queue → Agent.  But ALL legs share
-    the same pair of phone numbers (the external caller + the
-    company number).  By hashing the sorted phone numbers, we
-    collapse all legs into one dedup key.
-
-    Returns empty string if no phone numbers could be extracted.
-    """
-    phones: set[str] = set()
-    for party in parties:
-        if not isinstance(party, dict):
-            continue
-        from_info = party.get("from") or {}
-        to_info = party.get("to") or {}
-        for info in (from_info, to_info):
-            ph = info.get("phoneNumber") or ""
-            if ph:
-                # Normalize: strip whitespace, keep only digits and leading +
-                phones.add(ph.strip())
-    if len(phones) < 2:
-        return ""
-    # Sort for deterministic key regardless of direction
-    sorted_phones = "_".join(sorted(phones))
-    return f"call:phones:{sorted_phones}"
-
-
-async def _safe_handle_call_summary(
-    handler: "CallSummaryHandler",
-    raw_body: dict,
-    session_id: str,
-) -> None:
-    """
-    Wrapper that runs call_summary_handler.handle() as a background task.
-    Catches ALL exceptions so they never become unhandled task exceptions.
-    """
-    try:
-        result = await handler.handle(raw_body)
-        logger.info(
-            "Background call summary processing complete",
-            extra={
-                "event": "call_summary_bg_complete",
-                "session_id": session_id,
-                "result_status": result.get("status", "unknown"),
-            },
-        )
-    except Exception as exc:
-        logger.error(
-            "Background call summary processing failed",
-            extra={
-                "event": "call_summary_bg_error",
-                "session_id": session_id,
-                "error": str(exc),
-            },
-            exc_info=True,
-        )
-
-
 @router.get(
     "/webhook",
     summary="RC Webhook Validation Challenge",
@@ -250,13 +181,11 @@ async def rc_webhook_validation(
 )
 async def rc_webhook_receiver(
     request: Request,
-    background_tasks: BackgroundTasks,
     settings: Settings = Depends(get_settings),
     forwarder: ZapierForwarder = Depends(_get_forwarder),
     idempotency: IdempotencyCache = Depends(_get_idempotency_cache),
     rc_api: RCApiClient = Depends(_get_rc_api_client),
     redactor: SensitiveDataRedactor = Depends(_get_redactor),
-    call_summary_handler: CallSummaryHandler = Depends(_get_call_summary_handler),
 ) -> dict[str, Any]:
     """
     POST /api/v1/rc/webhook
@@ -328,122 +257,20 @@ async def rc_webhook_receiver(
         },
     )
 
-    # ── Step 2a: Route call-ended events to the CallSummaryHandler ─────
-    # RC sends a telephony/sessions webhook for EVERY status change:
-    #   Proceeding → Answered → Hold → Disconnected
-    # We only want "Disconnected" (= call ended). All others are skipped.
-    #
-    # DEDUPLICATION (multi-layer):
-    #   RC sends a SEPARATE Disconnected event for each party AND each
-    #   telephony session leg (IVR → Queue → Agent transfers create new
-    #   session IDs).  We deduplicate on THREE levels:
-    #     1. Exact telephonySessionId (catches same-session duplicates)
-    #     2. Phone-number pair + time bucket (catches cross-session dupes
-    #        for the same logical call routed through IVR/Queue/Agent)
-    #     3. Processing lock in CallSummaryHandler (serializes execution
-    #        so only ONE handler fetches the API at a time)
-    #
-    # BACKGROUND TASK:
-    #   The handler is fired as a background asyncio task so the webhook
-    #   returns 200 to RC immediately.  This avoids timeout issues and
-    #   prevents backpressure from slow API fetches.
     event_path: str = raw_body.get("event", "") or ""
+    # Telephony call-ended events were previously routed to CallSummaryHandler
+    # (which fetches call-log AI notes and POSTs them to Logics).
+    # This integration is now disabled, so we return immediately to avoid
+    # frequent downstream API calls and high failure rates.
     if "/telephony/sessions" in event_path:
-        body = raw_body.get("body", {}) or {}
-        parties = body.get("parties", []) or []
-
-        session_id = str(
-            body.get("telephonySessionId")
-            or body.get("sessionId")
-            or ""
-        )
-
-        # Extract all party status codes from the event
-        party_statuses = [
-            (p.get("status") or {}).get("code", "")
-            for p in parties
-            if isinstance(p, dict)
-        ]
-
         logger.info(
-            "Telephony event received",
+            "Telephony sessions received — call summary integration disabled",
             extra={
-                "event": "telephony_event_received",
+                "event": "telephony_ignored",
                 "rc_event_path": event_path,
-                "party_statuses": party_statuses,
-                "session_id": session_id,
             },
         )
-
-        # Only process when at least one party is Disconnected
-        if any(s == "Disconnected" for s in party_statuses):
-
-            # ── Layer 1: Deduplicate by exact session ID ──────────
-            dedup_key = f"call:{session_id}"
-            if idempotency.is_duplicate(dedup_key):
-                logger.info(
-                    "Call-ended event already processed for this session — skipping duplicate",
-                    extra={
-                        "event": "call_ended_duplicate_skipped",
-                        "session_id": session_id,
-                        "dedup_key": dedup_key,
-                    },
-                )
-                return {"status": "duplicate_call_skipped", "session_id": session_id}
-
-            # ── Layer 2: Deduplicate by phone-number pair ─────────
-            # RC creates separate telephonySessionId values for each
-            # leg of a call (IVR → Queue → Agent).  To catch these,
-            # we build a dedup key from the sorted phone numbers of
-            # all parties.  This collapses all legs of the same
-            # logical call into one processing event.
-            phone_dedup_key = _build_phone_dedup_key(parties)
-            if phone_dedup_key and idempotency.is_duplicate(phone_dedup_key):
-                logger.info(
-                    "Call-ended event already processed for this phone pair — skipping cross-session duplicate",
-                    extra={
-                        "event": "call_ended_phone_duplicate_skipped",
-                        "session_id": session_id,
-                        "phone_dedup_key": phone_dedup_key,
-                    },
-                )
-                # Still mark the session key so exact-match catches it next time
-                idempotency.mark_seen(dedup_key)
-                return {"status": "duplicate_call_skipped", "session_id": session_id}
-
-            # Mark BOTH keys as seen BEFORE processing
-            idempotency.mark_seen(dedup_key)
-            if phone_dedup_key:
-                idempotency.mark_seen(phone_dedup_key)
-
-            logger.info(
-                "Call-ended (Disconnected) detected — queuing for background processing",
-                extra={
-                    "event": "call_ended_event_detected",
-                    "rc_event_path": event_path,
-                    "party_statuses": party_statuses,
-                    "session_id": session_id,
-                    "phone_dedup_key": phone_dedup_key or "(none)",
-                },
-            )
-
-            # ── Background processing ─────────────────────────────
-            # FastAPI's BackgroundTasks runs AFTER the 200 response is sent
-            # to RC.  The handler's _processing_lock serializes execution
-            # so only ONE call is fetched at a time (no 429 avalanche).
-            background_tasks.add_task(
-                _safe_handle_call_summary, call_summary_handler, raw_body, session_id
-            )
-            return {"status": "call_summary_queued", "session_id": session_id}
-        else:
-            logger.info(
-                "Telephony event is not call-ended — skipping",
-                extra={
-                    "event": "telephony_event_skipped",
-                    "party_statuses": party_statuses,
-                },
-            )
-            return {"status": "telephony_event_skipped", "party_statuses": party_statuses}
+        return {"status": "telephony_ignored", "reason": "call_summary_disabled"}
 
     # ── Step 3: Parse into RCWebhookEvent (SMS path) ────────────────
     try:
